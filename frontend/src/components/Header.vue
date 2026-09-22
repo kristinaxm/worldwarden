@@ -23,7 +23,7 @@ import logoImage from '@/assets/images/worldwarden-logo.png'
           <h1>WorldWarden</h1>
         </div>
         <p class="hero__tagline">
-          “Lär känna världen – ett quiz i taget”
+          “Lär dig världen – ett quiz i taget”
         </p>
         <button class="hero__button">
           Starta din resa
