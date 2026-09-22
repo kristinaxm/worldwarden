@@ -32,6 +32,8 @@ Tre terminaler, från projektmappen:
 | Backend | `cd backend` → `npm run dev` | http://localhost:3000 |
 | Frontend | `cd frontend` → `npm run dev` | http://localhost:5173 |
 
+När databasen har startat, kör `npm run migrate` i `backend/` innan backend startas första gången och efter att nya migrationer har lagts till. Se [backend/README.md](backend/README.md) för autentisering och API.
+
 ## Testa
 
 - Backend + databas: `GET http://localhost:3000/api/health` ska ge `{"status":"ok","db":"connected"}`

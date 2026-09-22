@@ -3,10 +3,29 @@ import { RouterView } from 'vue-router'
 import Header from '@/components/Header.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import Footer from '@/components/Footer.vue'
-import {ref} from "vue";
+import AuthDialog from '@/components/AuthDialog.vue'
+import { useAuth } from '@/composables/useAuth'
+import { nextTick, onMounted, ref } from 'vue'
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
+const authMode = ref(null)
+const { user, pending, error, restore, logout } = useAuth()
+
+onMounted(restore)
+
+function openAuth(mode) {
+  closeMobileMenu()
+  authMode.value = mode
+}
+
+async function closeAuth() {
+  authMode.value = null
+  await nextTick()
+  if (document.activeElement === document.body) {
+    document.querySelector('.hero__auth-button')?.focus()
+  }
+}
 
 //#region Toggle sidebar and hamburger menu
 function toggleSidebar() {
@@ -26,7 +45,14 @@ function closeMobileMenu() {
 <template>
   <div class="app-shell">
 
-    <Header />
+    <Header @auth="openAuth" />
+
+    <div v-if="error" class="account-error" role="alert">
+      <span>{{ error }}</span>
+      <button type="button" :disabled="pending" @click="user ? logout() : restore()">Försök igen</button>
+    </div>
+
+    <AuthDialog v-if="authMode" :mode="authMode" @close="closeAuth" />
 
     <button class="mobile-menu-button" type="button" aria-label="Öppna meny" @click="toggleMobileMenu">
       ☰
@@ -60,10 +86,11 @@ function closeMobileMenu() {
           </nav>
           <div class="mobile-menu__divider"></div>
           <div class="mobile-menu__auth">
-            <button type="button">
-              🔑 Logga in
+            <p v-if="user" class="mobile-menu__account">{{ user.email }}</p>
+            <button type="button" :disabled="pending" @click="user ? logout() : openAuth('login')">
+              {{ user ? 'Logga ut' : '🔑 Logga in' }}
             </button>
-            <button type="button">
+            <button v-if="!user" type="button" :disabled="pending" @click="openAuth('signup')">
               👤 Skapa konto
             </button>
           </div>
@@ -78,7 +105,7 @@ function closeMobileMenu() {
 
     <!-- SIDEBAR + MAIN CONTENT -->
     <div class="main-layout" :class="{ 'main-layout--collapsed': sidebarCollapsed }">
-      <Sidebar :collapsed="sidebarCollapsed" @toggle="toggleSidebar">
+      <Sidebar :collapsed="sidebarCollapsed" @toggle="toggleSidebar" @auth="openAuth">
         <template #footer>
           <Footer />
         </template>
@@ -92,6 +119,34 @@ function closeMobileMenu() {
 </template>
 
 <style scoped>
+.account-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: #fff0ed;
+  color: #9e3020;
+  font-size: 14px;
+}
+
+.account-error button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.mobile-menu__account {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
 .app-shell {
   width: 100%;
   height: 100vh;
