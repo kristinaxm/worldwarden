@@ -8,7 +8,7 @@ const quizCards = [
   {
     title: 'Flaggor',
     description: 'Lär dig flaggor från hela världen.',
-    difficulty: 'Lätt',
+    difficulty: 'Nybörjare',
     image: flagsImage,
   },
   {
@@ -26,41 +26,41 @@ const quizCards = [
   {
     title: 'Världsdelar',
     description: 'Utforska jordens kontinenter.',
-    difficulty: 'Lätt',
+    difficulty: 'Nybörjare',
     image: continentsImage,
   },
   {
     title: 'Hav & Sjöar',
     description: 'Upptäck hav, sjöar och vattenområden.',
-    difficulty: 'Svår',
+    difficulty: 'Avancerad',
     image: seasLakesImage,
   },
   {
     title: 'Världsdelar',
     description: 'Utforska jordens kontinenter.',
-    difficulty: 'Lätt',
+    difficulty: 'Nybörjare',
     image: continentsImage,
   },
   {
     title: 'Hav & Sjöar',
     description: 'Upptäck hav, sjöar och vattenområden.',
-    difficulty: 'Svår',
-    image: seasLakesImage,
-  },{
-    title: 'Världsdelar',
-    description: 'Utforska jordens kontinenter.',
-    difficulty: 'Lätt',
-    image: continentsImage,
-  },
-  {
-    title: 'Hav & Sjöar',
-    description: 'Upptäck hav, sjöar och vattenområden.',
-    difficulty: 'Svår',
+    difficulty: 'Expert',
     image: seasLakesImage,
   },{
     title: 'Världsdelar',
     description: 'Utforska jordens kontinenter.',
-    difficulty: 'Lätt',
+    difficulty: 'Nybörjare',
+    image: continentsImage,
+  },
+  {
+    title: 'Hav & Sjöar',
+    description: 'Upptäck hav, sjöar och vattenområden.',
+    difficulty: 'Expert',
+    image: seasLakesImage,
+  },{
+    title: 'Världsdelar',
+    description: 'Utforska jordens kontinenter.',
+    difficulty: 'Nybörjare',
     image: continentsImage,
   }
 ]
@@ -114,11 +114,12 @@ const quizCards = [
         <div class="difficulty-filter">
           <span>Nivåer</span>
           <button class="difficulty-filter__active">
-            All
+            Alla
           </button>
-          <button>Lätt</button>
+          <button>Nybörjare</button>
           <button>Medel</button>
-          <button>Svår</button>
+          <button>Avancerad</button>
+          <button>Expert</button>
         </div>
       </div>
       <div class="quiz-grid">
