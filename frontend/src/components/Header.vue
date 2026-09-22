@@ -5,6 +5,12 @@ import logoImage from '@/assets/images/worldwarden-logo.png'
 
 <template>
   <header class="hero" :style="{ backgroundImage: `url(${heroImage})` }">
+    <div class="hero__stars">
+      <span class="hero__star hero__star--one">✦</span>
+      <span class="hero__star hero__star--two">✦</span>
+      <span class="hero__star hero__star--three">✦</span>
+      <span class="hero__star hero__star--four">✦</span>
+    </div>
     <div class="hero__overlay">
       <div class="hero__content">
         <div class="hero__brand">
@@ -30,12 +36,57 @@ import logoImage from '@/assets/images/worldwarden-logo.png'
 <style scoped>
 .hero {
   width: 100%;
+  position: relative;
+  overflow: hidden;
   min-height: 300px;
   flex-shrink: 0;
   background: linear-gradient(90deg, rgba(7, 50, 63, 0.78), rgba(9, 83, 99, 0.35)), linear-gradient(135deg, #45798a, #9cc8d1);
   background-size: cover;
   background-position: center;
   color: white;
+
+  .hero__stars {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+
+    .hero__star {
+      position: absolute;
+      color: white;
+      font-size: 14px;
+      opacity: 0;
+      text-shadow: 0 0 4px white, 0 0 10px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 235, 160, 0.8);
+      animation: starPulse 4s ease-in-out infinite;
+    }
+
+    .hero__star--one {
+      top: 18%;
+      left: 24%;
+      animation-delay: 0s;
+    }
+
+    .hero__star--two {
+      top: 28%;
+      left: 62%;
+      font-size: 10px;
+      animation-delay: 1.4s;
+    }
+
+    .hero__star--three {
+      top: 12%;
+      left: 78%;
+      font-size: 12px;
+      animation-delay: 2.6s;
+    }
+
+    .hero__star--four {
+      top: 50%;
+      left: 42%;
+      font-size: 9px;
+      animation-delay: 3.3s;
+    }
+  }
 
   .hero__overlay {
     width: 100%;
@@ -134,14 +185,36 @@ import logoImage from '@/assets/images/worldwarden-logo.png'
   }
 }
 
-@keyframes floatRotate
-{
+@keyframes floatRotate {
   from {
     rotate: -7deg;
   }
 
   to {
     rotate: 7deg;
+  }
+}
+
+@keyframes starPulse {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(0deg);
+  }
+
+  30% {
+    opacity: 0;
+    transform: scale(0.6) rotate(20deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.4) rotate(45deg);
+  }
+
+  70% {
+    opacity: 0;
+    transform: scale(0.6) rotate(70deg);
   }
 }
 
