@@ -68,9 +68,9 @@ function closeMobileMenu() {
             </button>
           </div>
           <div class="mobile-menu__footer">
-            <a href="#">Help</a>
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
+            <a href="#">Hjälp</a>
+            <a href="#">Integritetspolicy</a>
+            <a href="#">Användarvillkor </a>
           </div>
         </div>
       </div>

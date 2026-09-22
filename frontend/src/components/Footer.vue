@@ -1,8 +1,8 @@
 <template>
   <footer class="footer">
-    <a href="#">Help</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
+    <a href="#">Hjälp</a>
+    <a href="#">Integritetspolicy</a>
+    <a href="#">Användarvillkor </a>
   </footer>
 </template>
 
