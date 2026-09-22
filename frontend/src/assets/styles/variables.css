@@ -1,0 +1,27 @@
+:root {
+  /* Colors */
+  --color-background: #eef3f5;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f8fafb;
+
+  --color-primary: #087487;
+  --color-primary-dark: #055766;
+  --color-primary-light: #e5f5f7;
+
+  --color-text: #18212b;
+  --color-text-secondary: #66727e;
+
+  --color-border: #dce4e8;
+
+  /* Radius */
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 16px;
+
+  /* Shadows */
+  --shadow-small: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.1);
+
+  /* Typography */
+  --font-family: Arial, Helvetica, sans-serif;
+}
