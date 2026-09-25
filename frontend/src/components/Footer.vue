@@ -1,3 +1,7 @@
+<script setup>
+defineOptions({ name: 'AppFooter' })
+</script>
+
 <template>
   <footer class="footer">
     <a href="#">Hjälp</a>

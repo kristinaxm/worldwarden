@@ -1,10 +1,24 @@
 <script setup>
 import heroImage from '@/assets/images/headerhero/heroImage.png'
 import logoImage from '@/assets/images/worldwarden-logo.png'
+import { useAuth } from '@/composables/useAuth'
+
+const emit = defineEmits(['auth'])
+defineOptions({ name: 'AppHeader' })
+const { user, pending, logout } = useAuth()
 </script>
 
 <template>
   <header class="hero" :style="{ backgroundImage: `url(${heroImage})` }">
+    <div class="hero__account">
+      <span v-if="user" class="hero__status" :title="user.email">Inloggad</span>
+      <button
+        class="hero__auth-button"
+        type="button"
+        :disabled="pending"
+        @click="user ? logout() : emit('auth', 'login')"
+      >{{ user ? 'Logga ut' : 'Logga in' }}</button>
+    </div>
     <div class="hero__stars">
       <span class="hero__star hero__star--one">✦</span>
       <span class="hero__star hero__star--two">✦</span>
@@ -34,6 +48,46 @@ import logoImage from '@/assets/images/worldwarden-logo.png'
 </template>
 
 <style scoped>
+.hero__account {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero__status {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hero__auth-button {
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  border-radius: 999px;
+  background: rgb(5 55 65 / 0.85);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hero__auth-button:hover {
+  background: var(--color-primary-dark);
+}
+
+.hero__auth-button:focus-visible {
+  outline: 3px solid #ead6a1;
+  outline-offset: 3px;
+}
+
+.hero__auth-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .hero {
   width: 100%;
   position: relative;
@@ -228,7 +282,7 @@ import logoImage from '@/assets/images/worldwarden-logo.png'
 
     .hero__overlay {
       min-height: 200px;
-      padding: 20px 16px;
+      padding: 72px 16px 24px;
 
       .hero__content {
 

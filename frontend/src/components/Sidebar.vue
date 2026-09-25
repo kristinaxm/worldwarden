@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
 defineProps({
   collapsed: {
@@ -8,7 +9,9 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['toggle'])
+const emit = defineEmits(['toggle', 'auth'])
+defineOptions({ name: 'AppSidebar' })
+const { user, pending, logout } = useAuth()
 </script>
 
 <template>
@@ -19,7 +22,7 @@ const emit = defineEmits(['toggle'])
       <div class="sidebar__header">
         <div class="sidebar__user">
           <div class="sidebar__avatar">👤</div>
-          <span class="sidebar__user-name">Användare_123</span>
+          <span class="sidebar__user-name" :title="user?.email">{{ user?.email || 'Gäst' }}</span>
         </div>
 
         <button class="sidebar__toggle" type="button" :aria-label="collapsed ? 'Öppna sidomeny' : 'Stäng sidomeny'" @click="emit('toggle')">
@@ -61,12 +64,27 @@ const emit = defineEmits(['toggle'])
 
       <!-- AUTH -->
       <div class="sidebar__auth">
-        <button class="sidebar__button sidebar__button--outline" type="button" title="Logga in">
+        <button
+          class="sidebar__button sidebar__button--outline"
+          type="button"
+          :title="user ? 'Logga ut' : 'Logga in'"
+          :aria-label="user ? 'Logga ut' : 'Logga in'"
+          :disabled="pending"
+          @click="user ? logout() : emit('auth', 'login')"
+        >
           <span class="sidebar__button-icon">🔑</span>
-          <span class="sidebar__button-text">Logga in</span>
+          <span class="sidebar__button-text">{{ user ? 'Logga ut' : 'Logga in' }}</span>
         </button>
 
-        <button class="sidebar__button sidebar__button--filled" type="button" title="Skapa konto">
+        <button
+          v-if="!user"
+          class="sidebar__button sidebar__button--filled"
+          type="button"
+          title="Skapa konto"
+          aria-label="Skapa konto"
+          :disabled="pending"
+          @click="emit('auth', 'signup')"
+        >
           <span class="sidebar__button-icon">👤</span>
           <span class="sidebar__button-text">Skapa konto</span>
         </button>
@@ -128,6 +146,8 @@ const emit = defineEmits(['toggle'])
 
         .sidebar__user-name {
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
 
@@ -222,6 +242,16 @@ const emit = defineEmits(['toggle'])
         font-weight: 700;
         cursor: pointer;
         transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+        &:disabled {
+          opacity: 0.65;
+          cursor: wait;
+        }
+
+        &:focus-visible {
+          outline: 3px solid var(--color-primary);
+          outline-offset: 3px;
+        }
 
         .sidebar__button-icon {
           flex-shrink: 0;
