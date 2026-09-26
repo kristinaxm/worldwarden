@@ -1,0 +1,12 @@
+@import './variables.css';
+@import './reset.css';
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+button {
+  cursor: pointer;
+}

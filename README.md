@@ -16,6 +16,7 @@ docker compose up -d
 cd backend
 cp .env.example .env
 npm install
+npm run migrate
 npm run dev
 
 # 3. Frontend (http://localhost:5173), i en ny terminal
@@ -25,3 +26,5 @@ npm run dev
 ```
 
 Testa att backend når databasen: `GET http://localhost:3000/api/health`
+
+Backendens autentisering och API beskrivs i [backend/README.md](backend/README.md).

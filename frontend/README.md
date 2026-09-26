@@ -1,5 +1,11 @@
 # frontend
 
+## Authentication
+
+The homepage, sidebar and mobile menu open the shared login/registration popup. Account creation returns to login with a confirmation message. Login restores the current account after reload; logout revokes the session. All account requests use the backend's HttpOnly cookie.
+
+Start the database and backend using [backend/README.md](../backend/README.md), then run `npm run dev` here. Vite proxies `/api` to `http://localhost:3000`; open the frontend at `http://localhost:5173`, matching `FRONTEND_ORIGIN` in `backend/.env`. For deployment, serve `/api` through the same origin as the frontend and configure the backend origin and HTTPS settings accordingly.
+
 This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
