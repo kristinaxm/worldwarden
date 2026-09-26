@@ -1,8 +1,8 @@
-import { createHash, randomBytes } from 'node:crypto'
-import { pool } from './db.js'
+const { createHash, randomBytes } = require('node:crypto')
+const { pool } = require('./db.js')
 
-export const sessionCookie = process.env.NODE_ENV === 'production' ? '__Host-session' : 'session'
-export const cookieOptions = {
+const sessionCookie = process.env.NODE_ENV === 'production' ? '__Host-session' : 'session'
+const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax',
@@ -10,13 +10,13 @@ export const cookieOptions = {
 }
 const sessionDuration = 24 * 60 * 60 * 1000
 
-export function sessionHash(req) {
+function sessionHash(req) {
   const token = req.cookies[sessionCookie]
   if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null
   return createHash('sha256').update(token).digest()
 }
 
-export async function createSession(req, res, userId) {
+async function createSession(req, res, userId) {
   const token = randomBytes(32).toString('base64url')
   const hash = createHash('sha256').update(token).digest()
   const connection = await pool.getConnection()
@@ -40,7 +40,7 @@ export async function createSession(req, res, userId) {
   res.cookie(sessionCookie, token, { ...cookieOptions, maxAge: sessionDuration })
 }
 
-export async function requireUser(req, res, next) {
+async function requireUser(req, res, next) {
   const hash = sessionHash(req)
   if (hash) {
     const [users] = await pool.execute(
@@ -57,3 +57,5 @@ export async function requireUser(req, res, next) {
   res.clearCookie(sessionCookie, cookieOptions)
   res.status(401).json({ error: 'Authentication required' })
 }
+
+module.exports = { sessionCookie, cookieOptions, sessionHash, createSession, requireUser }
