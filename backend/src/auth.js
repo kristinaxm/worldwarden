@@ -1,13 +1,13 @@
-import { randomBytes } from 'node:crypto'
-import argon2 from 'argon2'
-import { Router } from 'express'
-import { rateLimit } from 'express-rate-limit'
-import validator from 'validator'
-import { pool } from './db.js'
-import { cookieOptions, createSession, requireUser, sessionCookie, sessionHash } from './sessions.js'
+const { randomBytes } = require('node:crypto')
+const argon2 = require('argon2')
+const { Router } = require('express')
+const { rateLimit } = require('express-rate-limit')
+const validator = require('validator')
+const { pool } = require('./db.js')
+const { cookieOptions, createSession, requireUser, sessionCookie, sessionHash } = require('./sessions.js')
 
 const hashOptions = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 }
-const dummyHash = await argon2.hash(randomBytes(32), hashOptions)
+const dummyHash = argon2.hash(randomBytes(32), hashOptions)
 
 function credentials(req, res, next) {
   const { email, password } = req.body || {}
@@ -26,7 +26,7 @@ function credentials(req, res, next) {
   next()
 }
 
-export const authRouter = Router()
+const authRouter = Router()
 const limiterOptions = {
   windowMs: 15 * 60 * 1000,
   standardHeaders: 'draft-8',
@@ -68,7 +68,7 @@ authRouter.post('/login', ipLimiter, credentials, accountLimiter, async (req, re
     [email],
   )
   const user = users[0]
-  const valid = await argon2.verify(user?.password_hash || dummyHash, password)
+  const valid = await argon2.verify(user?.password_hash || (await dummyHash), password)
   if (!user || !valid) return res.status(401).json({ error: 'Invalid email or password' })
 
   await createSession(req, res, user.id)
@@ -83,3 +83,5 @@ authRouter.post('/logout', async (req, res) => {
   res.clearCookie(sessionCookie, cookieOptions)
   res.sendStatus(204)
 })
+
+module.exports = { authRouter }
