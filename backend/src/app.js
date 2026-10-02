@@ -2,7 +2,7 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const express = require('express')
 const helmet = require('helmet')
-const { authRouter } = require('./auth.js')
+const authRouter = require('./routes/auth.js')
 const healthRouter = require('./routes/health.js')
 
 const app = express()
@@ -41,7 +41,7 @@ app.use((err, req, res, next) => {
   if (['charset.unsupported', 'encoding.unsupported'].includes(err.type)) {
     return res.status(415).json({ error: 'Unsupported request encoding' })
   }
-  console.error('Request failed', { method: req.method, code: err.code || 'INTERNAL_ERROR' })
+  console.error('Request failed', err)
   res.status(500).json({ error: 'Something went wrong' })
 })
 
