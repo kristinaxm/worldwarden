@@ -5,14 +5,12 @@ import Sidebar from '@/components/Sidebar.vue'
 import Footer from '@/components/Footer.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
 import { useAuth } from '@/composables/useAuth'
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
 const authMode = ref(null)
 const { user, pending, error, restore, logout } = useAuth()
-
-onMounted(restore)
 
 function openAuth(mode) {
   closeMobileMenu()
