@@ -1,0 +1,3 @@
+ALTER TABLE countries
+  ADD COLUMN capital VARCHAR(100) NULL,
+  ADD COLUMN continent VARCHAR(50) NULL;
