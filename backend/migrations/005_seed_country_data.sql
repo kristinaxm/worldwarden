@@ -1,0 +1,12 @@
+UPDATE countries SET capital = 'Stockholm', continent = 'Europa' WHERE code = 'SE';
+UPDATE countries SET capital = 'Oslo', continent = 'Europa' WHERE code = 'NO';
+UPDATE countries SET capital = 'Köpenhamn', continent = 'Europa' WHERE code = 'DK';
+UPDATE countries SET capital = 'Helsingfors', continent = 'Europa' WHERE code = 'FI';
+UPDATE countries SET capital = 'Reykjavik', continent = 'Europa' WHERE code = 'IS';
+UPDATE countries SET capital = 'Berlin', continent = 'Europa' WHERE code = 'DE';
+UPDATE countries SET capital = 'Paris', continent = 'Europa' WHERE code = 'FR';
+UPDATE countries SET capital = 'Rom', continent = 'Europa' WHERE code = 'IT';
+UPDATE countries SET capital = 'Madrid', continent = 'Europa' WHERE code = 'ES';
+UPDATE countries SET capital = 'London', continent = 'Europa' WHERE code = 'GB';
+UPDATE countries SET capital = 'Washington D.C.', continent = 'Nordamerika' WHERE code = 'US';
+UPDATE countries SET capital = 'Tokyo', continent = 'Asien' WHERE code = 'JP';
