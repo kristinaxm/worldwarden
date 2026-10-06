@@ -14,12 +14,33 @@ Repo: https://github.com/kristinaxm/worldwarden
 git clone git@github.com:kristinaxm/worldwarden.git
 cd worldwarden
 
-cd backend
 cp .env.example .env
+cp backend/.env.example backend/.env
+
+cd backend
 npm install
 
 cd ../frontend
 npm install
+```
+
+### Databaslösenord
+
+Databasen använder användaren `worldwarden` (inte `root`) och bara den egna datorn kan ansluta till den. Hitta på ett lösenord, till exempel med:
+
+```sh
+node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
+```
+
+Skriv in samma lösenord som `DB_PASSWORD` i **både** `.env` (i projektmappen) och `backend/.env`. Båda filerna ignoreras av git, så lösenordet hamnar aldrig på GitHub.
+
+Har du en databas sedan tidigare (med `root`/`root`) måste den skapas om en gång, eftersom MySQL bara skapar användaren när databasen är ny:
+
+```sh
+docker compose down -v
+docker compose up -d
+cd backend
+npm run migrate
 ```
 
 ## Starta
@@ -50,8 +71,8 @@ Database → `+` → Data Source → MySQL
 |---|---|
 | Host | `localhost` |
 | Port | `3306` |
-| User | `root` |
-| Password | `root` |
+| User | `worldwarden` |
+| Password | Ditt `DB_PASSWORD` från `.env` |
 | Database | `worldwarden` |
 
 ## Stoppa databasen

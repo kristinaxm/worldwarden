@@ -9,17 +9,21 @@
 Krav: Node 24 (`nvm use` / `fnm use` läser `.nvmrc`) och Docker.
 
 ```sh
-# 1. Databas
+# 1. Miljöfiler – hitta på ett databaslösenord och skriv in det
+#    som DB_PASSWORD i BÅDA filerna
+cp .env.example .env
+cp backend/.env.example backend/.env
+
+# 2. Databas
 docker compose up -d
 
-# 2. Backend (http://localhost:3000)
+# 3. Backend (http://localhost:3000)
 cd backend
-cp .env.example .env
 npm install
 npm run migrate
 npm run dev
 
-# 3. Frontend (http://localhost:5173), i en ny terminal
+# 4. Frontend (http://localhost:5173), i en ny terminal
 cd frontend
 npm install
 npm run dev
