@@ -1,69 +1,72 @@
 <script setup>
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
 import flagsImage from '@/assets/images/quizhero/flaggor.png'
 import capitalsImage from '@/assets/images/quizhero/huvudstäder.png'
 import countriesImage from '@/assets/images/quizhero/länder.png'
-import continentsImage from '@/assets/images/quizhero/världsdelar.png'
-import seasLakesImage from '@/assets/images/quizhero/havochsjöar.png'
+
+const router = useRouter()
+
+const selectedDifficulty = ref('Alla')
+
 const quizCards = [
   {
-    title: 'Flaggor',
-    description: 'Lär dig flaggor från hela världen.',
+    title: 'Nybörjare',
+    description: 'Känn igen landet genom dess flagga och välj mellan två svarsalternativ.',
     difficulty: 'Nybörjare',
+    difficultyKey: 'beginner',
+    category: 'Flaggor',
     image: flagsImage,
   },
   {
-    title: 'Huvudstäder',
-    description: 'Matcha land med rätt huvudstad.',
+    title: 'Medel',
+    description: 'Se flaggan och välj rätt huvudstad bland fyra svarsalternativ.',
     difficulty: 'Medel',
+    difficultyKey: 'medium',
+    category: 'Huvudstäder',
     image: capitalsImage,
   },
   {
-    title: 'Länder',
-    description: 'Lär dig känna igen olika länder.',
-    difficulty: 'Medel',
+    title: 'Avancerad',
+    description: 'Se flaggan och skriv själv vilket land den tillhör.',
+    difficulty: 'Avancerad',
+    difficultyKey: 'advanced',
+    category: 'Länder',
     image: countriesImage,
   },
   {
-    title: 'Världsdelar',
-    description: 'Utforska jordens kontinenter.',
-    difficulty: 'Nybörjare',
-    image: continentsImage,
-  },
-  {
-    title: 'Hav & Sjöar',
-    description: 'Upptäck hav, sjöar och vattenområden.',
-    difficulty: 'Avancerad',
-    image: seasLakesImage,
-  },
-  {
-    title: 'Världsdelar',
-    description: 'Utforska jordens kontinenter.',
-    difficulty: 'Nybörjare',
-    image: continentsImage,
-  },
-  {
-    title: 'Hav & Sjöar',
-    description: 'Upptäck hav, sjöar och vattenområden.',
+    title: 'Expert',
+    description: 'Se flaggan och skriv både landets namn och dess huvudstad.',
     difficulty: 'Expert',
-    image: seasLakesImage,
-  },{
-    title: 'Världsdelar',
-    description: 'Utforska jordens kontinenter.',
-    difficulty: 'Nybörjare',
-    image: continentsImage,
+    difficultyKey: 'expert',
+    category: 'Länder & huvudstäder',
+    image: countriesImage,
   },
-  {
-    title: 'Hav & Sjöar',
-    description: 'Upptäck hav, sjöar och vattenområden.',
-    difficulty: 'Expert',
-    image: seasLakesImage,
-  },{
-    title: 'Världsdelar',
-    description: 'Utforska jordens kontinenter.',
-    difficulty: 'Nybörjare',
-    image: continentsImage,
-  }
 ]
+
+const filteredQuizCards = computed(() => {
+  if (selectedDifficulty.value === 'Alla') {
+    return quizCards
+  }
+
+  return quizCards.filter(
+    quiz => quiz.difficulty === selectedDifficulty.value
+  )
+})
+
+function selectDifficulty(difficulty) {
+  selectedDifficulty.value = difficulty
+}
+
+function startQuiz(difficulty) {
+  router.push({
+    name: 'quiz',
+    params: {
+      difficulty,
+    },
+  })
+}
 </script>
 
 <template>
@@ -106,30 +109,37 @@ const quizCards = [
     </section>
 
     <!-- QUIZ SECTION -->
-    <section class="home-card quiz-section">
+    <section id="quizzes" class="home-card quiz-section">
       <div class="quiz-section__header">
-        <h2>
-          Exempel på quiz och nivåval
-        </h2>
+        <h2>Välj svårighetsnivå</h2>
         <div class="difficulty-filter">
           <span>Nivåer</span>
-          <button class="difficulty-filter__active">
+          <button :class="{'difficulty-filter__active': selectedDifficulty === 'Alla'}" @click="selectDifficulty('Alla')">
             Alla
           </button>
-          <button>Nybörjare</button>
-          <button>Medel</button>
-          <button>Avancerad</button>
-          <button>Expert</button>
+          <button :class="{'difficulty-filter__active': selectedDifficulty === 'Nybörjare'}" @click="selectDifficulty('Nybörjare')">
+            Nybörjare
+          </button>
+          <button :class="{'difficulty-filter__active': selectedDifficulty === 'Medel'}" @click="selectDifficulty('Medel')">
+            Medel
+          </button>
+          <button :class="{'difficulty-filter__active': selectedDifficulty === 'Avancerad'}" @click="selectDifficulty('Avancerad')">
+            Avancerad
+          </button>
+          <button :class="{'difficulty-filter__active': selectedDifficulty === 'Expert'}" @click="selectDifficulty('Expert')">
+            Expert
+          </button>
         </div>
       </div>
+
       <div class="quiz-grid">
-        <article v-for="quiz in quizCards" :key="quiz.title" class="quiz-card">
-          <div class="quiz-card__image" :style="{ backgroundImage: `url(${quiz.image})` }"></div>
+        <article v-for="quiz in filteredQuizCards" :key="quiz.difficultyKey" class="quiz-card">
+          <div class="quiz-card__image" :style="{backgroundImage: `url(${quiz.image})`}"/>
           <div class="quiz-card__content">
             <h3>{{ quiz.title }}</h3>
             <p>{{ quiz.description }}</p>
-            <small>Nivå: {{ quiz.difficulty }}</small>
-            <button class="quiz-card__button">
+            <small>{{ quiz.category }}</small>
+            <button class="quiz-card__button" @click="startQuiz(quiz.difficultyKey)">
               Spela quiz
             </button>
           </div>
@@ -270,6 +280,11 @@ const quizCards = [
 
   /* QUIZ HEADER */
   .quiz-section {
+
+    /* Added by the "Starta din resa" button in Header.vue */
+    &.quiz-section--highlight {
+      animation: quizSectionHighlight 1.6s ease;
+    }
 
     .quiz-section__header {
       margin-bottom: 16px;
@@ -607,6 +622,26 @@ const quizCards = [
         }
       }
     }
+  }
+}
+
+/* "Starta din resa" - briefly highlights the quiz section */
+@keyframes quizSectionHighlight {
+  0%,
+  100% {
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-small);
+  }
+
+  30% {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(8, 116, 135, 0.18), var(--shadow-small);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home .quiz-section.quiz-section--highlight {
+    animation: none;
   }
 }
 </style>

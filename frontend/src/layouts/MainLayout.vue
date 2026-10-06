@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar.vue'
 import Footer from '@/components/Footer.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
 import { useAuth } from '@/composables/useAuth'
-import { nextTick, onMounted, provide, ref, watch } from 'vue'
+import { nextTick, provide, ref, watch } from 'vue'
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
@@ -13,8 +13,6 @@ const authMode = ref(null)
 const content = ref(null)
 const route = useRoute()
 const { user, pending, error, restore, logout } = useAuth()
-
-onMounted(restore)
 
 // Start each page at the top of the scrollable content area.
 watch(

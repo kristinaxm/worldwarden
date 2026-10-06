@@ -7,6 +7,31 @@ import { RouterLink } from 'vue-router'
 const emit = defineEmits(['auth'])
 defineOptions({ name: 'AppHeader' })
 const { user, pending, logout } = useAuth()
+
+// Scrolls down to the quiz section on the home page (id="quizzes" in HomeView)
+// and briefly highlights it. If main already shows the section there is nothing
+// to scroll, so the highlight makes sure the button always gives visible feedback.
+function scrollToQuizzes() {
+  const section = document.getElementById('quizzes')
+  if (!section) return
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  section.scrollIntoView({
+    behavior: reduceMotion ? 'auto' : 'smooth',
+    block: 'start',
+  })
+
+  // Remove and re-add the class so the animation restarts on every click.
+  section.classList.remove('quiz-section--highlight')
+  void section.offsetWidth
+  section.classList.add('quiz-section--highlight')
+  section.addEventListener(
+    'animationend',
+    () => section.classList.remove('quiz-section--highlight'),
+    { once: true },
+  )
+}
 </script>
 
 <template>
@@ -42,7 +67,7 @@ const { user, pending, logout } = useAuth()
         <p class="hero__tagline">
           “Lär dig världen – ett quiz i taget”
         </p>
-        <button class="hero__button">
+        <button class="hero__button" type="button" @click="scrollToQuizzes">
           Starta din resa
         </button>
       </div>

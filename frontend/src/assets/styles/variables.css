@@ -12,6 +12,23 @@
   --color-text-secondary: #66727e;
 
   --color-border: #dce4e8;
+  --color-border-strong: #b6c4c8;
+
+  /* Correct answers */
+  --color-success: #25a965;
+
+  /* Wrong answers / warnings */
+  --color-danger: #dc3347;
+  --color-danger-dark: #9e3020;
+  --color-danger-light: #fff0ed;
+
+  /* Gold - highscore and the "Starta din resa" button */
+  --color-accent: #ead6a1;
+  --color-accent-dark: #8a6410;
+  --color-accent-light: #fffaeb;
+
+  /* Dark backdrop behind modals */
+  --color-backdrop: rgb(5 34 42 / 0.65);
 
   /* Radius */
   --radius-small: 8px;

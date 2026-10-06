@@ -18,3 +18,5 @@ dist/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+.mcp.json
