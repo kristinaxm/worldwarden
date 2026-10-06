@@ -4,6 +4,7 @@ const express = require('express')
 const helmet = require('helmet')
 const authRouter = require('./routes/auth.js')
 const healthRouter = require('./routes/health.js')
+const countryRouter = require('./routes/countries.js')
 
 const app = express()
 const origin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
@@ -28,7 +29,7 @@ app.use(express.json({ limit: '8kb' }))
 app.use(cookieParser())
 
 app.use('/api/health', healthRouter)
-
+app.use('/api/countries', countryRouter)
 app.use('/api/auth', authRouter)
 app.use((req, res) => res.status(404).json({ error: 'Not found' }))
 app.use((err, req, res, next) => {
