@@ -1,18 +1,26 @@
 <script setup>
-import { RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Header from '@/components/Header.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import Footer from '@/components/Footer.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
 import { useAuth } from '@/composables/useAuth'
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, provide, ref, watch } from 'vue'
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
 const authMode = ref(null)
+const content = ref(null)
+const route = useRoute()
 const { user, pending, error, restore, logout } = useAuth()
 
 onMounted(restore)
+
+// Start each page at the top of the scrollable content area.
+watch(
+  () => route.path,
+  () => content.value?.scrollTo({ top: 0 }),
+)
 
 function openAuth(mode) {
   closeMobileMenu()
@@ -26,6 +34,8 @@ async function closeAuth() {
     document.querySelector('.hero__auth-button')?.focus()
   }
 }
+
+provide('openAuth', openAuth)
 
 //#region Toggle sidebar and hamburger menu
 function toggleSidebar() {
@@ -68,12 +78,12 @@ function closeMobileMenu() {
             </button>
           </div>
           <nav class="mobile-menu__navigation">
-            <RouterLink to="/" @click="closeMobileMenu">
+            <RouterLink to="/" active-class="" exact-active-class="router-link-active" @click="closeMobileMenu">
               ▦ Huvudmeny
             </RouterLink>
-            <a href="#">
+            <RouterLink :to="{ name: 'profile' }" @click="closeMobileMenu">
               ☆ Mina framsteg
-            </a>
+            </RouterLink>
             <a href="#">
               ♜ Topplistor
             </a>
@@ -86,7 +96,9 @@ function closeMobileMenu() {
           </nav>
           <div class="mobile-menu__divider"></div>
           <div class="mobile-menu__auth">
-            <p v-if="user" class="mobile-menu__account">{{ user.email }}</p>
+            <RouterLink v-if="user" :to="{ name: 'profile' }" class="mobile-menu__account" @click="closeMobileMenu">
+              <span>{{ user.email }}<small>Visa profil</small></span>
+            </RouterLink>
             <button type="button" :disabled="pending" @click="user ? logout() : openAuth('login')">
               {{ user ? 'Logga ut' : '🔑 Logga in' }}
             </button>
@@ -111,7 +123,7 @@ function closeMobileMenu() {
         </template>
       </Sidebar>
 
-      <main class="main-layout__content">
+      <main ref="content" class="main-layout__content">
         <RouterView />
       </main>
     </div>
@@ -143,9 +155,27 @@ function closeMobileMenu() {
 
 .mobile-menu__account {
   margin-bottom: 4px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
   overflow-wrap: anywhere;
+  text-align: left;
   font-weight: 700;
+  cursor: pointer;
+
+  small {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-primary);
+    font-size: 12px;
+  }
 }
+
 
 .app-shell {
   width: 100%;
