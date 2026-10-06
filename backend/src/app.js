@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const authRouter = require('./routes/auth.js')
 const healthRouter = require('./routes/health.js')
 const questionRouter = require('./routes/questions.js')
+const countryRouter = require('./routes/countries.js')
 
 const app = express()
 const origin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
@@ -29,6 +30,7 @@ app.use(express.json({ limit: '8kb' }))
 app.use(cookieParser())
 
 app.use('/api/health', healthRouter)
+app.use('/api/countries', countryRouter)
 app.use('/api/questions', questionRouter)
 
 app.use('/api/auth', authRouter)
