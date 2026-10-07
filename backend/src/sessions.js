@@ -40,22 +40,35 @@ async function createSession(req, res, userId) {
   res.cookie(sessionCookie, token, { ...cookieOptions, maxAge: sessionDuration })
 }
 
-async function requireUser(req, res, next) {
+// Returns the logged-in user for this request, or null for guests and expired sessions
+async function findSessionUser(req) {
   const hash = sessionHash(req)
-  if (hash) {
-    const [users] = await pool.execute(
-      `SELECT users.id, users.email, users.created_at AS createdAt
-       FROM sessions JOIN users ON users.id = sessions.user_id
-       WHERE sessions.token_hash = ? AND sessions.expires_at > UTC_TIMESTAMP()`,
-      [hash],
-    )
-    if (users.length) {
-      req.user = users[0]
-      return next()
-    }
+  if (!hash) return null
+
+  const [users] = await pool.execute(
+    `SELECT users.id, users.email, users.created_at AS createdAt
+     FROM sessions JOIN users ON users.id = sessions.user_id
+     WHERE sessions.token_hash = ? AND sessions.expires_at > UTC_TIMESTAMP()`,
+    [hash],
+  )
+  return users[0] || null
+}
+
+// Stops guests with 401
+async function requireUser(req, res, next) {
+  const user = await findSessionUser(req)
+  if (user) {
+    req.user = user
+    return next()
   }
   res.clearCookie(sessionCookie, cookieOptions)
   res.status(401).json({ error: 'Authentication required' })
 }
 
-module.exports = { sessionCookie, cookieOptions, sessionHash, createSession, requireUser }
+// Lets everyone through: req.user is the logged-in user, or null for guests
+async function loadUser(req, res, next) {
+  req.user = await findSessionUser(req)
+  next()
+}
+
+module.exports = { sessionCookie, cookieOptions, sessionHash, createSession, requireUser, loadUser }
