@@ -30,6 +30,13 @@ const { user, pending, logout } = useAuth()
           <div class="sidebar__avatar">👤</div>
           <span class="sidebar__user-name">{{ user.email }}</span>
         </RouterLink>
+        <RouterLink
+          v-if="user"
+          :to="{ name: 'settings' }"
+          class="sidebar__settings"
+          title="Kontoinställningar"
+          aria-label="Kontoinställningar"
+        >⚙</RouterLink>
         <div v-else class="sidebar__user">
           <div class="sidebar__avatar">👤</div>
           <span class="sidebar__user-name">Gäst</span>
@@ -48,9 +55,9 @@ const { user, pending, logout } = useAuth()
           <span class="sidebar__text">Huvudmeny</span>
         </RouterLink>
 
-        <RouterLink :to="{ name: 'profile' }" class="sidebar__link" title="Mina framsteg">
+        <RouterLink :to="{ name: 'results' }" class="sidebar__link" title="Mina resultat">
           <span class="sidebar__icon">☆</span>
-          <span class="sidebar__text">Mina framsteg</span>
+          <span class="sidebar__text">Mina resultat</span>
         </RouterLink>
 
         <a href="#" class="sidebar__link" title="Topplistor">
@@ -181,6 +188,35 @@ const { user, pending, logout } = useAuth()
           .sidebar__avatar {
             transform: scale(1.1) rotate(-6deg);
           }
+        }
+
+        &:focus-visible {
+          outline: 3px solid var(--color-primary);
+          outline-offset: 2px;
+        }
+      }
+
+      /* SETTINGS BUTTON */
+      .sidebar__settings {
+        width: 30px;
+        height: 30px;
+        margin-left: auto;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 50%;
+        color: var(--color-text-secondary);
+        font-size: 18px;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.2s ease;
+
+        &:hover,
+        &.router-link-active {
+          background: var(--color-primary-light);
+          color: var(--color-primary-dark);
+        }
+
+        &:hover {
+          transform: rotate(45deg);
         }
 
         &:focus-visible {
@@ -341,6 +377,10 @@ const { user, pending, logout } = useAuth()
         .sidebar__user-name {
           display: none;
         }
+      }
+
+      .sidebar__settings {
+        margin-left: 0;
       }
 
       .sidebar__toggle {
