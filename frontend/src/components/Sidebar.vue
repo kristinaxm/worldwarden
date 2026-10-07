@@ -20,9 +20,19 @@ const { user, pending, logout } = useAuth()
 
       <!-- USER + COLLAPSE BUTTON -->
       <div class="sidebar__header">
-        <div class="sidebar__user">
+        <RouterLink
+          v-if="user"
+          :to="{ name: 'profile' }"
+          class="sidebar__user sidebar__user--button"
+          :title="`Min profil (${user.email})`"
+          aria-label="Öppna min profil"
+        >
           <div class="sidebar__avatar">👤</div>
-          <span class="sidebar__user-name" :title="user?.email">{{ user?.email || 'Gäst' }}</span>
+          <span class="sidebar__user-name">{{ user.email }}</span>
+        </RouterLink>
+        <div v-else class="sidebar__user">
+          <div class="sidebar__avatar">👤</div>
+          <span class="sidebar__user-name">Gäst</span>
         </div>
 
         <button class="sidebar__toggle" type="button" :aria-label="collapsed ? 'Öppna sidomeny' : 'Stäng sidomeny'" @click="emit('toggle')">
@@ -33,15 +43,15 @@ const { user, pending, logout } = useAuth()
       <!-- NAVIGATION -->
       <nav class="sidebar__navigation">
 
-        <RouterLink to="/" class="sidebar__link" title="Huvudmeny">
+        <RouterLink to="/" class="sidebar__link" title="Huvudmeny" active-class="" exact-active-class="router-link-active">
           <span class="sidebar__icon">▦</span>
           <span class="sidebar__text">Huvudmeny</span>
         </RouterLink>
 
-        <a href="#" class="sidebar__link" title="Mina framsteg">
+        <RouterLink :to="{ name: 'profile' }" class="sidebar__link" title="Mina framsteg">
           <span class="sidebar__icon">☆</span>
           <span class="sidebar__text">Mina framsteg</span>
-        </a>
+        </RouterLink>
 
         <a href="#" class="sidebar__link" title="Topplistor">
           <span class="sidebar__icon">♜</span>
@@ -148,6 +158,34 @@ const { user, pending, logout } = useAuth()
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+      }
+
+      .sidebar__user--button {
+        margin: -4px;
+        padding: 4px 10px 4px 4px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--color-text);
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        .sidebar__avatar {
+          transition: transform 0.2s ease;
+        }
+
+        &:hover {
+          background: var(--color-primary-light);
+
+          .sidebar__avatar {
+            transform: scale(1.1) rotate(-6deg);
+          }
+        }
+
+        &:focus-visible {
+          outline: 3px solid var(--color-primary);
+          outline-offset: 2px;
         }
       }
 

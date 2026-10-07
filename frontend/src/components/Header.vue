@@ -2,6 +2,7 @@
 import heroImage from '@/assets/images/headerhero/heroImage.png'
 import logoImage from '@/assets/images/worldwarden-logo.png'
 import { useAuth } from '@/composables/useAuth'
+import { RouterLink } from 'vue-router'
 
 const emit = defineEmits(['auth'])
 defineOptions({ name: 'AppHeader' })
@@ -36,7 +37,9 @@ function scrollToQuizzes() {
 <template>
   <header class="hero" :style="{ backgroundImage: `url(${heroImage})` }">
     <div class="hero__account">
-      <span v-if="user" class="hero__status" :title="user.email">Inloggad</span>
+      <RouterLink v-if="user" :to="{ name: 'profile' }" class="hero__profile" :title="user.email" aria-label="Öppna min profil">
+        <span class="hero__profile-name">Min profil</span>
+      </RouterLink>
       <button
         class="hero__auth-button"
         type="button"
@@ -83,9 +86,34 @@ function scrollToQuizzes() {
   gap: 12px;
 }
 
-.hero__status {
-  font-size: 13px;
+.hero__profile {
+  min-height: 44px;
+  padding: 4px 16px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  border-radius: 999px;
+  background: rgb(5 55 65 / 0.6);
+  color: white;
+  font-size: 14px;
   font-weight: 700;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgb(5 55 65 / 0.9);
+  }
+
+  &:focus-visible {
+    outline: 3px solid #ead6a1;
+    outline-offset: 3px;
+  }
+}
+
+.hero__profile-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hero__auth-button {
