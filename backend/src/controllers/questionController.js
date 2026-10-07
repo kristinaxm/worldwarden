@@ -9,7 +9,8 @@ async function start(req, res) {
     return res.status(400).json({ error: 'Unknown difficulty' })
   }
 
-  const quiz = await questionService.createQuiz(difficulty)
+  // req.user is set by loadUser: the logged-in user, or null for guests
+  const quiz = await questionService.createQuiz(difficulty, req.user)
   res.status(201).json(quiz)
 }
 
