@@ -1,23 +1,12 @@
 const { pool } = require('../db.js')
+const countryService = require('./countryService.js')
 
 
 //#region Config
 const QUESTIONS_PER_QUIZ = 10
 
-// Difficulties that can be played right now. The controller uses this to validate input.
+// Difficulties that can be played right now. Controllers use this to validate input.
 const SUPPORTED_DIFFICULTIES = ['beginner']
-//#endregion
-
-
-//#region Countries
-// TEMPORARY: replace with countryService.getAllCountries() once it is merged.
-// It must return the same fields: id, code, name, continent.
-async function getAllCountries() {
-  const [countries] = await pool.query(
-    'SELECT id, code, name, continent FROM countries',
-  )
-  return countries
-}
 //#endregion
 
 
@@ -66,11 +55,45 @@ function buildBeginnerQuestion(country, allCountries, number) {
 //#endregion
 
 
+//#region Save attempt
+// Logged-in users only: saves the quiz before it is played, so the server knows
+// which countries were asked and when the quiz started (started_at = now).
+// resultService fills in the answers, score and completed_at when the quiz is finished.
+async function saveAttempt(userId, difficulty, countries) {
+  const connection = await pool.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    const [attempt] = await connection.execute(
+      'INSERT INTO quiz_attempts (user_id, difficulty, total_questions) VALUES (?, ?, ?)',
+      [userId, difficulty, countries.length],
+    )
+
+    // One row per question: [attempt_id, country_id, question_number]
+    const answerRows = countries.map((country, index) => [attempt.insertId, country.id, index + 1])
+    await connection.query(
+      'INSERT INTO quiz_answers (attempt_id, country_id, question_number) VALUES ?',
+      [answerRows],
+    )
+
+    await connection.commit()
+    return attempt.insertId
+  } catch (err) {
+    await connection.rollback()
+    throw err
+  } finally {
+    connection.release()
+  }
+}
+//#endregion
+
+
 //#region Create quiz
 // Creates a new quiz with 10 random, unique countries.
-// Nothing is saved yet – attemptId is always null until attempts are stored (next PR).
-async function createQuiz(difficulty) {
-  const allCountries = await getAllCountries()
+// user is null for guests – then nothing is saved and attemptId is null.
+async function createQuiz(difficulty, user) {
+  const allCountries = await countryService.getAll()
 
   if (allCountries.length < QUESTIONS_PER_QUIZ) {
     throw new Error('Not enough countries in the database to create a quiz')
@@ -82,8 +105,10 @@ async function createQuiz(difficulty) {
     buildBeginnerQuestion(country, allCountries, index + 1),
   )
 
+  const attemptId = user ? await saveAttempt(user.id, difficulty, pickedCountries) : null
+
   return {
-    attemptId: null,
+    attemptId,
     difficulty,
     questions,
   }
@@ -92,6 +117,7 @@ async function createQuiz(difficulty) {
 
 
 module.exports = {
+  QUESTIONS_PER_QUIZ,
   SUPPORTED_DIFFICULTIES,
   createQuiz,
 }
