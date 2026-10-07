@@ -6,6 +6,7 @@ const authRouter = require('./routes/auth.js')
 const healthRouter = require('./routes/health.js')
 const questionRouter = require('./routes/questions.js')
 const countryRouter = require('./routes/countries.js')
+const resultRouter = require('./routes/results.js')
 
 const app = express()
 const origin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
@@ -32,6 +33,7 @@ app.use(cookieParser())
 app.use('/api/health', healthRouter)
 app.use('/api/countries', countryRouter)
 app.use('/api/questions', questionRouter)
+app.use('/api/results', resultRouter)
 
 app.use('/api/auth', authRouter)
 app.use((req, res) => res.status(404).json({ error: 'Not found' }))
@@ -44,6 +46,10 @@ app.use((err, req, res, next) => {
   }
   if (['charset.unsupported', 'encoding.unsupported'].includes(err.type)) {
     return res.status(415).json({ error: 'Unsupported request encoding' })
+  }
+  // Errors created with httpError() in services
+  if (err.expose && err.status) {
+    return res.status(err.status).json({ error: err.message })
   }
   console.error('Request failed', err)
   res.status(500).json({ error: 'Something went wrong' })
