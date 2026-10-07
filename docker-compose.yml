@@ -3,10 +3,15 @@ services:
     image: mysql:9.7
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${DB_NAME:-worldwarden}
+      # App user with full access to the worldwarden database only
+      MYSQL_USER: ${DB_USER:-worldwarden}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the .env file in the project root}
+      # Nobody needs root locally, so it gets a random password
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
     ports:
-      - "3306:3306"
+      # Only reachable from this computer, never from the network
+      - "127.0.0.1:3306:3306"
     volumes:
       - db_data:/var/lib/mysql
 

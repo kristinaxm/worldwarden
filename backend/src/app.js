@@ -4,6 +4,7 @@ const express = require('express')
 const helmet = require('helmet')
 const authRouter = require('./routes/auth.js')
 const healthRouter = require('./routes/health.js')
+const questionRouter = require('./routes/questions.js')
 const countryRouter = require('./routes/countries.js')
 
 const app = express()
@@ -30,6 +31,8 @@ app.use(cookieParser())
 
 app.use('/api/health', healthRouter)
 app.use('/api/countries', countryRouter)
+app.use('/api/questions', questionRouter)
+
 app.use('/api/auth', authRouter)
 app.use((req, res) => res.status(404).json({ error: 'Not found' }))
 app.use((err, req, res, next) => {

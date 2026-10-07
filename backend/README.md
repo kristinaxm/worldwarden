@@ -4,10 +4,10 @@ Express API with MySQL account storage and cookie-based authentication. Users, s
 
 ## Local setup
 
-Start Docker Desktop, then run `docker compose up -d` from the repository root. In `backend/`:
+Start Docker Desktop. In the repository root, copy `.env.example` to `.env` and set `DB_PASSWORD`, then run `docker compose up -d`. In `backend/`:
 
 ```sh
-cp .env.example .env
+cp .env.example .env   # use the same DB_USER and DB_PASSWORD as the root .env
 npm ci
 npm run migrate
 npm run dev
@@ -49,7 +49,7 @@ Origin checks, JSON-only writes and SameSite cookies protect state-changing brow
 
 ## Runtime settings
 
-Use `NODE_ENV=production` with HTTPS when deploying. Production cookies use `Secure` and the `__Host-session` name. Development uses `session` over local HTTP. Replace the default local root database credentials with a restricted application user for deployment.
+Use `NODE_ENV=production` with HTTPS when deploying. Production cookies use `Secure` and the `__Host-session` name. Development uses `session` over local HTTP. The API and migrations connect as the `worldwarden` application user, which only has access to the `worldwarden` database. The Compose database has a random root password nobody needs, and it only listens on `127.0.0.1`, so it can't be reached from the network.
 
 Registration and login share a limit of 20 requests per IP per 15 minutes. Login additionally permits 10 failed attempts per normalized email per 15 minutes. Limits use process memory and reset on restart. This setup targets one API process with direct client connections; shared limiting and explicit proxy trust configuration are needed when scaling or deploying behind a proxy.
 
