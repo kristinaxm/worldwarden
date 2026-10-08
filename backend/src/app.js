@@ -7,6 +7,7 @@ const healthRouter = require('./routes/health.js')
 const questionRouter = require('./routes/questions.js')
 const countryRouter = require('./routes/countries.js')
 const resultRouter = require('./routes/results.js')
+const profileRouter = require('./routes/profile.js')
 
 const app = express()
 const origin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
@@ -34,6 +35,7 @@ app.use('/api/health', healthRouter)
 app.use('/api/countries', countryRouter)
 app.use('/api/questions', questionRouter)
 app.use('/api/results', resultRouter)
+app.use('/api/profile', profileRouter)
 
 app.use('/api/auth', authRouter)
 app.use((req, res) => res.status(404).json({ error: 'Not found' }))

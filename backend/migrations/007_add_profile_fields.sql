@@ -1,0 +1,3 @@
+ALTER TABLE `users`
+ADD COLUMN display_name VARCHAR(50) NULL,
+ADD COLUMN avatar VARCHAR (20) NULL;
