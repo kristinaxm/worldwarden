@@ -79,8 +79,8 @@ function closeMobileMenu() {
             <RouterLink to="/" active-class="" exact-active-class="router-link-active" @click="closeMobileMenu">
               ▦ Huvudmeny
             </RouterLink>
-            <RouterLink :to="{ name: 'profile' }" @click="closeMobileMenu">
-              ☆ Mina framsteg
+            <RouterLink :to="{ name: 'results' }" @click="closeMobileMenu">
+              ☆ Mina resultat
             </RouterLink>
             <a href="#">
               ♜ Topplistor
@@ -96,6 +96,9 @@ function closeMobileMenu() {
           <div class="mobile-menu__auth">
             <RouterLink v-if="user" :to="{ name: 'profile' }" class="mobile-menu__account" @click="closeMobileMenu">
               <span>{{ user.email }}<small>Visa profil</small></span>
+            </RouterLink>
+            <RouterLink v-if="user" :to="{ name: 'settings' }" class="mobile-menu__account" @click="closeMobileMenu">
+              <span>⚙ Kontoinställningar<small>Byt e-post eller lösenord</small></span>
             </RouterLink>
             <button type="button" :disabled="pending" @click="user ? logout() : openAuth('login')">
               {{ user ? 'Logga ut' : '🔑 Logga in' }}
