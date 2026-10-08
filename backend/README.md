@@ -33,13 +33,102 @@ Signup creates an account without logging in. Email addresses use ASCII, are tri
 
 Invalid input returns `400`. Invalid credentials and missing or expired sessions return `401`. Disallowed origins return `403`, duplicate emails `409`, oversized bodies `413`, non-JSON writes `415`, and excessive attempts `429`. Unexpected failures return a generic `500`. Duplicate signup responses reveal whether an email is registered; login failures use the same response for unknown emails and incorrect passwords.
 
+## Countries API
+
+| Method | Path | Body | Success |
+| --- | --- | --- | --- |
+| GET | `/api/countries` | None | `200` with every country, sorted by name |
+| GET | `/api/countries/:id` | None | `200` with one country, `404` if it doesn't exist |
+
+A country looks like `{ "id": 1, "code": "SE", "name": "Sverige", "capital": "Stockholm", "continent": "Europa" }`. The countries are added by migrations.
+
+`POST /api/countries` and `PUT /api/countries/:id` also exist, but they have no authentication yet. Don't use them from the frontend until they are restricted to admins.
+
+## Quiz API
+
+A quiz is played in three requests. Only `beginner` is supported so far; other difficulties return `400 Unknown difficulty`.
+
+| Method | Path | Who | Success |
+| --- | --- | --- | --- |
+| GET | `/api/results/stats?difficulty=beginner` | Logged in | `200` with the latest result and highscore for the quiz intro |
+| POST | `/api/questions` | Everyone | `201` with 10 questions. Logged in users also get a saved attempt |
+| POST | `/api/results` | Everyone | `200` with the graded answers. Saved only for logged in users |
+
+Guests can play and get their answers graded, but nothing is saved for them. For logged in users the session cookie decides who the quiz belongs to.
+
+### Start a quiz
+
+`POST /api/questions` with `{ "difficulty": "beginner" }`:
+
+```json
+{
+  "attemptId": 42,
+  "difficulty": "beginner",
+  "questions": [
+    { "number": 1, "flagCode": "se", "options": ["Norge", "Sverige"] }
+  ]
+}
+```
+
+Every quiz has 10 unique countries. Each beginner question has two shuffled options: the correct country and a wrong one from the same continent. The correct answer is never sent. Flags are loaded from `https://flagcdn.com/w640/${flagCode}.png`.
+
+`attemptId` is `null` for guests. For logged in users the quiz is saved in `quiz_attempts` and `quiz_answers`, and the time starts now.
+
+### Submit the answers
+
+`POST /api/results` with one answer per question. `country` is the chosen option, or `null` if the question was skipped:
+
+```json
+{
+  "attemptId": 42,
+  "difficulty": "beginner",
+  "answers": [
+    { "number": 1, "flagCode": "se", "country": "Sverige" },
+    { "number": 2, "flagCode": "jp", "country": null }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "saved": true,
+  "score": 8,
+  "total": 10,
+  "durationSeconds": 74,
+  "newHighscore": true,
+  "previousBest": { "score": 7, "total": 10, "durationSeconds": 90 },
+  "answers": [
+    { "number": 1, "flagCode": "se", "answer": "Sverige", "correct": true, "correctAnswer": "Sverige" }
+  ]
+}
+```
+
+- Logged in users are graded against the countries saved when the quiz started, not the flag codes in the request. The time is calculated by the database.
+- A highscore has more correct answers, or the same score in less time. The first finished quiz on a level is not a new highscore.
+- Guests send `"attemptId": null` and get `saved: false`, `durationSeconds: null`, `newHighscore: false` and `previousBest: null`. They are graded by looking up the flag code.
+
+Errors: `400` for an unknown difficulty, an invalid `attemptId`, an unknown flag code, or anything other than 10 answers numbered 1–10. `404` if the quiz doesn't exist or belongs to another user, and `409` if it has already been submitted.
+
+### Stats
+
+`GET /api/results/stats?difficulty=beginner` returns the latest finished quiz and the best one. Both are `null` if the user hasn't finished a quiz on that level. Unfinished quizzes are ignored. Guests get `401`.
+
+```json
+{
+  "last": { "score": 8, "total": 10, "durationSeconds": 74 },
+  "best": { "score": 9, "total": 10, "durationSeconds": 90 }
+}
+```
+
 ## Storage and sessions
 
 Passwords use Argon2id with a random salt, 19 MiB memory, two iterations and parallelism one. Password hashes never appear in API responses.
 
 Login creates a random 256-bit session token. Only its SHA-256 hash is stored in `sessions`. The raw token is sent in an HttpOnly, SameSite=Lax cookie with a fixed 24-hour lifetime. Sessions survive API restarts. Logging in replaces the supplied browser session; other devices remain signed in. Logout revokes the supplied session immediately. Deleting a user cascades to their sessions. Expired sessions are rejected on every protected request and deleted at startup and hourly.
 
-Future protected routes can use the `requireUser` middleware from `src/sessions.js`. It sets `req.user` from the database; account ownership must come from that value rather than a client-supplied user ID. Add application tables through migrations with foreign keys to `users.id` as needed.
+Protected routes use the `requireUser` middleware from `src/sessions.js`. It sets `req.user` from the database; account ownership must come from that value rather than a client-supplied user ID. Routes that guests can also use, like the quiz, use `loadUser` instead: it sets `req.user` to the logged in user or `null` and never blocks the request. Add application tables through migrations with foreign keys to `users.id` as needed.
 
 ## Browser integration
 
