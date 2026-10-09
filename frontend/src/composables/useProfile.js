@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { watch } from 'vue'
 
 // Avatarer man kan välja mellan. Profilen sparar bara id:t.
 export const avatars = [
@@ -17,17 +18,20 @@ export const avatars = [
   { id: 'panda', emoji: '🐼', label: 'Panda', color: '#eef0ee' },
 ]
 
-// TODO: byt ut mot riktiga anrop när backend har endpoints för profilen.
-// Ändringar sparas bara i webbläsaren tills sidan laddas om.
 const displayName = ref('')
 const avatarId = ref(null)
 const email = ref('')
 
-// Låtsas att servern tar en kort stund på sig
-const wait = () => new Promise((resolve) => setTimeout(resolve, 400))
-
 export function useProfile() {
-  const { user, logout } = useAuth()
+  const { user, logout, setUser } = useAuth()
+
+  watch(user, (newUser) => {
+    if (newUser) {
+      displayName.value = newUser.display_name || ''
+      avatarId.value = newUser.avatar || null
+      email.value = newUser.email || ''
+    }
+  }, { immediate: true })
 
   const profile = computed(() => {
     const currentEmail = email.value || user.value?.email || ''
@@ -39,30 +43,66 @@ export function useProfile() {
     }
   })
 
-  // TODO: PATCH /api/profile { displayName, avatar }
   async function updateProfile({ name, avatar }) {
-    await wait()
-    displayName.value = name
-    avatarId.value = avatar
+    const res = await fetch('http://localhost:3000/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ displayName: name, avatar }),
+  })
+  if (!res.ok) throw new Error('Profilen kunde inte uppdateras!')
+      const data = await res.json()
+    displayName.value = data.user.display_name || ''
+    avatarId.value = data.user.avatar
+    setUser(data.user)
   }
 
-  // TODO: POST /api/profile/email { email, password } – servern kontrollerar lösenordet
-  async function changeEmail({ newEmail }) {
-    await wait()
-    email.value = newEmail
+
+  async function changeEmail({ newEmail, password }) {
+    const res = await fetch('http://localhost:3000/api/profile/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email: newEmail, password }),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'E-postadressen kunde inte uppdateras!')
+    }
+    const data = await res.json()
+    email.value = data.user.email
+    setUser(data.user)
   }
 
-  // TODO: POST /api/profile/password { currentPassword, newPassword }
-  async function changePassword() {
-    await wait()
+  async function changePassword({ currentPassword, newPassword }) {
+    const res = await fetch('http://localhost:3000/api/profile/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error || 'Kunde inte byta lösenord')
+  }
+    return res.json()
   }
 
-  // TODO: DELETE /api/profile { password } – raderar kontot och alla resultat.
-  // Just nu loggas man bara ut.
-  async function deleteAccount() {
-    await wait()
-    await logout()
+
+  async function deleteAccount({ password }) {
+  const res = await fetch('http://localhost:3000/api/profile', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ password }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error || 'Kunde inte radera kontot')
   }
+  await logout()
+}
 
   return {
     profile,
