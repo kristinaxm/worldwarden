@@ -46,9 +46,9 @@ async function findSessionUser(req) {
   if (!hash) return null
 
   const [users] = await pool.execute(
-    `SELECT users.id, users.email, users.created_at AS createdAt
-     FROM sessions JOIN users ON users.id = sessions.user_id
-     WHERE sessions.token_hash = ? AND sessions.expires_at > UTC_TIMESTAMP()`,
+  `SELECT users.id, users.email, users.display_name, users.avatar, users.created_at AS createdAt
+  FROM sessions JOIN users ON users.id = sessions.user_id
+  WHERE sessions.token_hash = ? AND sessions.expires_at > UTC_TIMESTAMP()`,
     [hash],
   )
   return users[0] || null

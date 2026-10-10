@@ -69,6 +69,10 @@ async function logout() {
   }
 }
 
+function setUser(newUser) {
+  user.value = newUser
+}
+
 export function useAuth() {
   return {
     user: readonly(user),
@@ -77,6 +81,7 @@ export function useAuth() {
     restore,
     login,
     logout,
+    setUser,
     register: (credentials) => request('/signup', credentials),
   }
 }
