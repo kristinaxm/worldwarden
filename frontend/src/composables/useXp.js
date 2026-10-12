@@ -67,8 +67,7 @@ export function useXp() {
   // Progress i procent för progressbaren (0 → 100)
   const progress = computed(() => {
     if (!nextLevel.value) return 100
-    const xpForNextLevel = nextLevel.value.min
-    return Math.min(100, Math.round((totalXp.value / xpForNextLevel) * 100))
+    return Math.min(100, Math.round((xpInLevel.value / xpForLevel.value) * 100))
 })
 
    // ─────────────────────────────────────────────

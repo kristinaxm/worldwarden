@@ -4,7 +4,6 @@ import { useXp } from '@/composables/useXp'
 
 const {
   totalXp,
-  isLoggedIn,
   currentLevel,
   nextLevel,
   xpInLevel,
@@ -19,13 +18,7 @@ onMounted(loadXp)
 </script>
 
 <template>
-  <!-- Utloggad: visa uppmaning -->
-  <div v-if="!isLoggedIn" class="xp-card xp-card--guest">
-    <p>Logga in för att samla XP och gå upp i nivå!</p>
-  </div>
-
-  <!-- Inloggad: visa XP -->
-  <div v-else class="xp-card">
+  <div class="xp-card">
     <div class="xp-card__header">
       <div>
         <p class="xp-card__label">Din nivå</p>
@@ -42,26 +35,23 @@ onMounted(loadXp)
     <!-- Progressbar -->
     <div class="xp-card__progress">
       <div class="xp-card__progress-bar">
-        <div
-          class="xp-card__progress-fill"
-          :style="{ width: progress + '%' }"
-        ></div>
-        <span class="xp-card_progress-percent"> {{ progress }}%</span>
+        <div class="xp-card__progress-fill" :style="{ width: progress + '%' }"></div>
       </div>
-
-      <!-- Text under bar -->
-      <p class="xp-card__progress-text">
-        <template v-if="nextLevel">
-          {{ totalXp }} XP ({{ progress }}%)
-          <span class="xp-card__progress-next">
-            · {{ xpToNextLevel }} XP kvar till {{ nextLevel.name }}
-          </span>
-        </template>
-        <template v-else>
-          🏆 Du har nått högsta nivån!
-        </template>
-      </p>
+      <span class="xp-card__progress-percent">{{ progress }}%</span>
     </div>
+
+    <!-- Text under bar -->
+    <p class="xp-card__progress-text">
+      <template v-if="nextLevel">
+        {{ totalXp }} XP
+        <span class="xp-card__progress-next">
+          · {{ xpToNextLevel }} XP kvar till {{ nextLevel.name }}
+        </span>
+      </template>
+      <template v-else>
+        🏆 Du har nått högsta nivån!
+      </template>
+    </p>
   </div>
 </template>
 
@@ -74,11 +64,6 @@ onMounted(loadXp)
   box-shadow: var(--shadow-small);
 }
 
-.xp-card--guest {
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
 
 .xp-card__header {
   display: flex;
@@ -127,7 +112,7 @@ onMounted(loadXp)
   overflow: hidden;
 }
 
-.xp-card_progress-percent {
+.xp-card__progress-percent {
   font-size: 12px;
   font-weight: 700;
   color: var(--color-primary);
