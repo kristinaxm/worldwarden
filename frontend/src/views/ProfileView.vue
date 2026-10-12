@@ -3,6 +3,7 @@ import { RouterLink } from 'vue-router'
 import LoginRequired from '@/components/LoginRequired.vue'
 import ProfileInfo from '@/components/ProfileInfo.vue'
 import { useAuth } from '@/composables/useAuth'
+import XpCard from '@/components/XpCard.vue'
 
 const { user, pending } = useAuth()
 </script>
@@ -21,6 +22,9 @@ const { user, pending } = useAuth()
       <section class="profile-card">
         <ProfileInfo />
       </section>
+
+      <!-- XP AND LEVEL -->
+      <XpCard />
 
       <!-- SHORTCUTS -->
       <nav class="profile-links" aria-label="Mitt konto">
