@@ -1,13 +1,6 @@
 const { pool } = require('../db.js')
 const countryService = require('./countryService.js')
-
-
-//#region Config
-const QUESTIONS_PER_QUIZ = 10
-
-// Difficulties that can be played right now. Controllers use this to validate input.
-const SUPPORTED_DIFFICULTIES = ['beginner']
-//#endregion
+const { LEVELS, QUESTIONS_PER_QUIZ } = require('../quizLevels.js')
 
 
 //#region Random helpers
@@ -24,32 +17,33 @@ function shuffle(items) {
 
   return shuffled
 }
-
-function pickRandom(items) {
-  return items[Math.floor(Math.random() * items.length)]
-}
 //#endregion
 
 
-//#region Beginner
-// Picks a wrong answer for a question. Prefers a country on the same continent
-// Example: If question is Sweden it prefers a country in Europe (Norway, Denmark, Spain etc.)
-function pickWrongCountry(country, allCountries) {
+//#region Questions
+// Picks `count` wrong answers for a question. Prefers countries on the same continent
+// Example: If question is Sweden it prefers countries in Europe (Norway, Denmark, Spain etc.)
+// If the continent has too few countries, the rest are taken from other continents.
+function pickWrongCountries(country, allCountries, count) {
   const otherCountries = allCountries.filter((other) => other.id !== country.id)
-  const sameContinent = otherCountries.filter((other) => other.continent === country.continent)
+  const sameContinent = shuffle(otherCountries.filter((other) => other.continent === country.continent))
+  const otherContinents = shuffle(otherCountries.filter((other) => other.continent !== country.continent))
 
-  return pickRandom(sameContinent.length > 0 ? sameContinent : otherCountries)
+  return [...sameContinent, ...otherContinents].slice(0, count)
 }
 
-// Beginner: a flag and two country names, one of them correct.
+// Builds one question: a flag and the options for the level, one of them correct.
+// The level decides how many options there are and what they are:
+// beginner = 2 country names, medium = 4 capitals.
 // The correct answer is never sent to the client and the options are shuffled.
-function buildBeginnerQuestion(country, allCountries, number) {
-  const wrongCountry = pickWrongCountry(country, allCountries)
+function buildQuestion(level, country, allCountries, number) {
+  const wrongCountries = pickWrongCountries(country, allCountries, level.optionCount - 1)
+  const options = [country, ...wrongCountries].map(level.correctAnswer)
 
   return {
     number,
     flagCode: country.code.toLowerCase(),
-    options: shuffle([country.name, wrongCountry.name]),
+    options: shuffle(options),
   }
 }
 //#endregion
@@ -102,7 +96,7 @@ async function createQuiz(difficulty, user) {
   const pickedCountries = shuffle(allCountries).slice(0, QUESTIONS_PER_QUIZ)
 
   const questions = pickedCountries.map((country, index) =>
-    buildBeginnerQuestion(country, allCountries, index + 1),
+    buildQuestion(LEVELS[difficulty], country, allCountries, index + 1),
   )
 
   const attemptId = user ? await saveAttempt(user.id, difficulty, pickedCountries) : null
@@ -117,7 +111,5 @@ async function createQuiz(difficulty, user) {
 
 
 module.exports = {
-  QUESTIONS_PER_QUIZ,
-  SUPPORTED_DIFFICULTIES,
   createQuiz,
 }

@@ -1,11 +1,12 @@
 const questionService = require('../services/questionService.js')
+const { SUPPORTED_DIFFICULTIES } = require('../quizLevels.js')
 
 // POST /api/questions – starts a new quiz
-// Body: { "difficulty": "beginner" }
+// Body: { "difficulty": "beginner" | "medium" }
 async function start(req, res) {
   const { difficulty } = req.body || {}
 
-  if (!questionService.SUPPORTED_DIFFICULTIES.includes(difficulty)) {
+  if (!SUPPORTED_DIFFICULTIES.includes(difficulty)) {
     return res.status(400).json({ error: 'Unknown difficulty' })
   }
 
