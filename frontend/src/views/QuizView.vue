@@ -9,7 +9,7 @@ const router = useRouter()
 const { user, pending: authPending } = useAuth()
 
 const difficulty = computed(() => route.params.difficulty)
-const connectedLevels = { beginner: 'country' }
+const connectedLevels = { beginner: 'country', medium: 'capital' }
 const connected = computed(() => Object.hasOwn(connectedLevels, difficulty.value))
 const attemptId = ref(null)
 const quizPending = ref(false)
