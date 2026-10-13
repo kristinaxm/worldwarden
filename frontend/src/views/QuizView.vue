@@ -2,12 +2,22 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { request } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
-const { user } = useAuth()
+const { user, pending: authPending } = useAuth()
 
 const difficulty = computed(() => route.params.difficulty)
+const connectedLevels = { beginner: 'country' }
+const connected = computed(() => Object.hasOwn(connectedLevels, difficulty.value))
+const attemptId = ref(null)
+const quizPending = ref(false)
+const quizError = ref('')
+const submission = ref(null)
+const resultSaved = ref(false)
+const statsError = ref('')
+let statsVersion = 0
 
 
 //#region Mock-data until backend is done
@@ -348,10 +358,11 @@ function shuffleQuestions(questions) {
 
 function createQuiz() {
 
-  // Picks 10 random UNIQUE questions.
-  quizQuestions.value = shuffleQuestions(
-    mockQuestions
-  ).slice(0, totalQuestions)
+  quizQuestions.value = connected.value ? [] : shuffleQuestions(mockQuestions).slice(0, totalQuestions)
+  attemptId.value = null
+  submission.value = null
+  resultSaved.value = false
+  quizError.value = ''
 
   questionIndex.value = 0
 
@@ -368,26 +379,34 @@ function createQuiz() {
   showExitModal.value = false
 }
 
-function startQuiz() {
-  quizStarted.value = true
-
-  // The timer only starts when the user clicks "Starta quiz".
-  startTimer()
+async function startQuiz() {
+  if (quizPending.value || authPending.value) return
+  quizError.value = ''
+  quizPending.value = true
+  try {
+    if (connected.value) {
+      const quiz = await request('/questions', { difficulty: difficulty.value })
+      attemptId.value = quiz.attemptId
+      quizQuestions.value = quiz.questions.map((question) => ({
+        ...question,
+        flagUrl: `https://flagcdn.com/w640/${question.flagCode}.png`,
+        countryOptions: question.options,
+        capitalOptions: question.options,
+      }))
+    }
+    quizStarted.value = true
+    startTimer()
+  } catch {
+    quizError.value = 'Det gick inte att starta quizet. Försök igen.'
+  } finally {
+    quizPending.value = false
+  }
 }
 
 //#endregion
 
 
 //#region Previous results (intro)
-
-/*
-  TEMPORARY: Latest result and highscore are stored in the browser's
-  localStorage, per user and difficulty.
-
-  Once the backend is ready this is fetched from quiz_attempts instead,
-  e.g. via GET /api/quiz/stats?difficulty=beginner.
-  Guests don't save any results (same as the backend will work).
-*/
 
 const storedResults = ref(null)
 
@@ -399,7 +418,24 @@ const storageKey = computed(() => {
   return `worldwarden:quiz-results:${user.value.id}:${difficulty.value}`
 })
 
-function loadStoredResults() {
+async function loadStoredResults() {
+  const version = ++statsVersion
+  statsError.value = ''
+  if (connected.value) {
+    storedResults.value = null
+    if (!user.value) return
+    try {
+      const stats = await request(`/results/stats?difficulty=${difficulty.value}`)
+      if (version !== statsVersion) return
+      storedResults.value = stats.last ? {
+        last: { ...stats.last, seconds: stats.last.durationSeconds },
+        best: { ...stats.best, seconds: stats.best.durationSeconds },
+      } : null
+    } catch {
+      if (version === statsVersion) statsError.value = 'Det gick inte att hämta tidigare resultat.'
+    }
+    return
+  }
   storedResults.value = null
 
   if (!storageKey.value) {
@@ -490,16 +526,15 @@ function saveResult() {
 
 // Reload the results when the user logs in/out or the difficulty changes.
 watch(storageKey, loadStoredResults, { immediate: true })
+onBeforeUnmount(() => statsVersion++)
 
 //#endregion
 
 
 //#region Encouragement text (intro)
 
-// Users only have an email so far, so we use the part before the @.
-// Can be replaced with a real name once the users table has one.
 const playerName = computed(() => {
-  const name = user.value?.email.split('@')[0]
+  const name = user.value?.display_name || user.value?.email.split('@')[0]
 
   if (!name) {
     return ''
@@ -634,6 +669,7 @@ function saveCurrentAnswer({ skipped = false } = {}) {
   // the old answer is replaced instead of adding a new one.
   answers.value[questionIndex.value] = {
     questionNumber: questionNumber.value,
+    flagCode: question.value.flagCode,
 
     country: question.value.country,
     capital: question.value.capital,
@@ -724,6 +760,7 @@ function loadSavedAnswer() {
 //#region Next question
 
 function nextQuestion() {
+  if (quizPending.value || submission.value) return
   saveCurrentAnswer()
 
   if (isLastQuestion.value) {
@@ -746,6 +783,7 @@ function submitAnswer() {
 //#region Skip question
 
 function skipQuestion() {
+  if (quizPending.value || submission.value) return
   saveCurrentAnswer({
     skipped: true
   })
@@ -766,6 +804,7 @@ function skipQuestion() {
 //#region Go back
 
 function previousQuestion() {
+  if (quizPending.value || submission.value) return
   if (!canGoBack.value) {
     return
   }
@@ -780,26 +819,60 @@ function previousQuestion() {
 
 //#region Finish quiz
 
-function finishQuiz() {
-  // Calculate the exact final time before stopping the timer.
-  updateElapsedTime()
+async function finishQuiz() {
+  if (quizPending.value) return
+  if (!submission.value) updateElapsedTime()
   stopTimer()
+  if (!connected.value) {
+    quizFinished.value = true
+    saveResult()
+    return
+  }
 
-  quizFinished.value = true
-
-  saveResult()
-
-  /*
-    Later, once the backend is connected,
-    we send the finished quiz result from here.
-
-    The backend will then be able to create:
-    - quiz_attempts
-    - quiz_answers
-
-    elapsedSeconds can be sent along then,
-    e.g. for score deductions when the quiz takes too long.
-  */
+  submission.value ??= {
+    attemptId: attemptId.value,
+    difficulty: difficulty.value,
+    answers: answers.value.map((answer) => ({
+      number: answer.questionNumber,
+      flagCode: answer.flagCode,
+      [connectedLevels[difficulty.value]]: answer.skipped ? null : answer[`${connectedLevels[difficulty.value]}Answer`],
+    })),
+  }
+  quizPending.value = true
+  quizError.value = ''
+  try {
+    let result
+    try {
+      result = await request('/results', submission.value)
+    } catch (err) {
+      if (err.status !== 409 || !attemptId.value) throw err
+      const history = await request(`/results?difficulty=${difficulty.value}`)
+      result = history.find((item) => item.id === attemptId.value)
+      if (!result) throw err
+      result.previousBest = storedResults.value?.best ?? null
+      result.newHighscore = Boolean(result.previousBest) && isBetterResult(
+        { score: result.score, seconds: result.durationSeconds }, result.previousBest,
+      )
+    }
+    answers.value = result.answers.map((answer) => ({
+      questionNumber: answer.number,
+      isCorrect: answer.correct,
+    }))
+    recalculateStreaks()
+    elapsedSeconds.value = result.durationSeconds ?? elapsedSeconds.value
+    newHighscore.value = result.newHighscore
+    previousBest.value = result.previousBest ? {
+      ...result.previousBest,
+      seconds: result.previousBest.durationSeconds ?? result.previousBest.seconds,
+    } : null
+    quizFinished.value = true
+    resultSaved.value = Boolean(result.saved || result.id)
+    loadStoredResults()
+  } catch {
+    quizError.value = 'Det gick inte att lämna in quizet. Dina svar finns kvar. Försök igen.'
+  } finally {
+    quizPending.value = false
+  }
 }
 
 //#endregion
@@ -809,6 +882,8 @@ function finishQuiz() {
 
 // "Spela igen" skips the intro and starts right away.
 function restartQuiz() {
+  if (quizPending.value) return
+  quizStarted.value = false
   createQuiz()
   startQuiz()
 }
@@ -923,7 +998,7 @@ createQuiz()
                 : `Fråga ${questionNumber} av ${totalQuestions}`
           }}
         </p>
-        <button class="quiz-close" type="button" aria-label="Stäng quiz" @click="requestCloseQuiz">
+        <button class="quiz-close" type="button" aria-label="Stäng quiz" :disabled="quizPending" @click="requestCloseQuiz">
           ×
         </button>
       </header>
@@ -932,6 +1007,12 @@ createQuiz()
       <div class="quiz-progress">
         <div class="quiz-progress__value" :style="{ width: `${progress}%` }"/>
       </div>
+
+      <div v-if="quizError" class="quiz-error" role="alert">
+        <span>{{ quizError }}</span>
+        <button v-if="submission" class="button button--primary" type="button" :disabled="quizPending" @click="finishQuiz">Försök igen</button>
+      </div>
+      <p v-if="quizPending" role="status">{{ submission ? 'Lämnar in quiz…' : 'Laddar quiz…' }}</p>
 
       <!-- INTRO - SHOWN BEFORE THE QUIZ STARTS -->
       <div v-if="!quizStarted" class="intro-content">
@@ -975,6 +1056,10 @@ createQuiz()
           </div>
         </div>
 
+        <div v-if="statsError" class="quiz-error" role="alert">
+          <span>{{ statsError }}</span>
+          <button class="button button--secondary" type="button" @click="loadStoredResults">Försök igen</button>
+        </div>
         <p class="intro-pep">
           {{ pepText }}
         </p>
@@ -983,14 +1068,14 @@ createQuiz()
           <button type="button" class="button button--secondary" @click="goHome">
             ← Gå tillbaka
           </button>
-          <button type="button" class="button button--primary" @click="startQuiz">
+          <button type="button" class="button button--primary" :disabled="quizPending || authPending" @click="startQuiz">
             Starta quiz
           </button>
         </div>
       </div>
 
       <!-- QUIZ RUNNING -->
-      <template v-else-if="!quizFinished">
+      <div v-else-if="!quizFinished" class="quiz-controls" :inert="quizPending || Boolean(submission)">
 
         <!-- BEGINNER -->
         <div v-if="difficulty === 'beginner'" class="quiz-content">
@@ -1132,7 +1217,7 @@ createQuiz()
             </button>
           </div>
         </footer>
-      </template>
+      </div>
 
       <!-- RESULT -->
       <template v-else>
@@ -1149,6 +1234,7 @@ createQuiz()
           <p class="result-percentage">
             Du klarade {{ percentage }}%
           </p>
+          <p v-if="connected && !resultSaved" class="result-message">Resultatet sparades inte. Logga in innan du startar ett quiz för att spara dina resultat.</p>
           <!-- NEW HIGHSCORE - ONLY WHEN AN EARLIER RECORD WAS BEATEN -->
           <div v-if="newHighscore" class="result-highscore" role="status">
             <strong>🎉 Nytt highscore!</strong>
@@ -1209,7 +1295,7 @@ createQuiz()
             <button type="button" class="button button--secondary" @click="goHome">
               Till startsidan
             </button>
-            <button type="button" class="button button--primary" @click="restartQuiz">
+            <button type="button" class="button button--primary" :disabled="quizPending" @click="restartQuiz">
               ↻ Spela igen
             </button>
           </div>
@@ -1243,6 +1329,22 @@ createQuiz()
 
 
 <style scoped>
+.quiz-controls {
+  display: contents;
+}
+
+.quiz-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-small);
+  background: var(--color-danger-light);
+  color: var(--color-danger-dark);
+}
+
 .quiz-page {
   min-height: 100vh;
   padding: 48px 24px;

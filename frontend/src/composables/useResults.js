@@ -3,8 +3,8 @@ import { request } from '@/api'
 import { useAuth } from '@/composables/useAuth'
 
 const levels = {
-  beginner: { category: 'Flaggor', difficulty: 'Nyb?rjare' },
-  medium: { category: 'Huvudst?der', difficulty: 'Medel' },
+  beginner: { category: 'Flaggor', difficulty: 'Nybörjare' },
+  medium: { category: 'Huvudstäder', difficulty: 'Medel' },
 }
 
 export function useResults(difficulty = 'beginner') {
@@ -50,7 +50,7 @@ export function useResults(difficulty = 'beginner') {
         }
       })
     } catch {
-      if (current === version) error.value = 'Det gick inte att h?mta resultaten. F?rs?k igen.'
+      if (current === version) error.value = 'Det gick inte att hämta resultaten. Försök igen.'
     } finally {
       if (current === version) loading.value = false
     }

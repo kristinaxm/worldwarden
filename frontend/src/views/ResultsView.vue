@@ -46,10 +46,10 @@ function formatDate(value) {
         <p class="results-header__tagline">Se hur det gick – fråga för fråga.</p>
       </div>
 
-      <div v-if="loading" class="results-empty" role="status">Laddar resultat?</div>
+      <div v-if="loading" class="results-empty" role="status">Laddar resultat…</div>
       <div v-else-if="error" class="results-empty" role="alert">
         <span>{{ error }}</span>
-        <button class="retry-button" type="button" @click="load">F?rs?k igen</button>
+        <button class="retry-button" type="button" @click="load">Försök igen</button>
       </div>
       <div v-else-if="!sortedResults.length" class="results-empty">
         <div class="results-empty__icon">🌍</div>
@@ -116,7 +116,7 @@ function formatDate(value) {
                 <span v-else class="result__subject">{{ question.subject }} →</span>
                 <span class="result__answer">
                   <strong>{{ question.correctAnswer }}</strong>
-                  <small v-if="!question.correct">Ditt svar: {{ question.answer || '?verhoppad' }}</small>
+                  <small v-if="!question.correct">Ditt svar: {{ question.answer || 'Överhoppad' }}</small>
                 </span>
                 <span class="result__icon">{{ question.correct ? '✓' : '×' }}</span>
               </li>
