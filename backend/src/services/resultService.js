@@ -1,28 +1,28 @@
 const { pool } = require('../db.js')
 const countryService = require('./countryService.js')
 const { httpError } = require('../httpError.js')
+const { LEVELS } = require('../quizLevels.js')
 
 
 //#region Grading
-// How an answer is graded per difficulty. Add medium, advanced and expert here later.
-const graders = {
-  beginner: (country, answer) => answer.country === country.name,
-}
-
-// questions: the correct country for each question – [{ number, code, name }]
-// answers: what the user answered – [{ number, country }]
+// questions: the correct country for each question – [{ number, code, name, capital }]
+// answers: what the user answered – [{ number, country }] or [{ number, capital }]
+// The level decides which answer field to read and what the correct answer is
+// (beginner: country / country name, medium: capital / capital).
 function gradeAnswers(difficulty, questions, answers) {
-  const isCorrect = graders[difficulty]
+  const level = LEVELS[difficulty]
 
   return questions.map((question) => {
     const answer = answers.find((item) => item.number === question.number)
+    const givenAnswer = answer[level.answerField]
+    const correctAnswer = level.correctAnswer(question)
 
     return {
       number: question.number,
       flagCode: question.code.toLowerCase(),
-      answer: answer.country,
-      correct: isCorrect(question, answer),
-      correctAnswer: question.name,
+      answer: givenAnswer,
+      correct: givenAnswer === correctAnswer,
+      correctAnswer,
     }
   })
 }
@@ -89,7 +89,7 @@ async function gradeGuestAnswers(difficulty, answers) {
     .map((answer) => {
       const country = countriesByCode.get(answer.flagCode.toLowerCase())
       if (!country) throw httpError(400, 'Unknown flag code')
-      return { number: answer.number, code: country.code, name: country.name }
+      return { number: answer.number, code: country.code, name: country.name, capital: country.capital }
     })
     .sort((a, b) => a.number - b.number)
 
@@ -127,7 +127,7 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     if (attempt.difficulty !== difficulty) throw httpError(400, 'Difficulty does not match the quiz')
 
     const [questions] = await connection.execute(
-      `SELECT quiz_answers.question_number AS number, countries.code, countries.name
+      `SELECT quiz_answers.question_number AS number, countries.code, countries.name, countries.capital
        FROM quiz_answers JOIN countries ON countries.id = quiz_answers.country_id
        WHERE quiz_answers.attempt_id = ?
        ORDER BY quiz_answers.question_number`,
@@ -140,9 +140,13 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     // Must be read before this quiz is marked as finished, otherwise it compares with itself
     const previousBest = await findBest(connection, userId, difficulty)
 
+    // country_answer for beginner, capital_answer for medium. The column name comes from
+    // quizLevels.js, never from the request, so it is safe to put in the SQL.
+    const { answerColumn } = LEVELS[difficulty]
+
     for (const answer of gradedAnswers) {
       await connection.execute(
-        'UPDATE quiz_answers SET country_answer = ?, is_correct = ? WHERE attempt_id = ? AND question_number = ?',
+        `UPDATE quiz_answers SET ${answerColumn} = ?, is_correct = ? WHERE attempt_id = ? AND question_number = ?`,
         [answer.answer, answer.correct ? 1 : 0, attemptId, answer.number],
       )
     }

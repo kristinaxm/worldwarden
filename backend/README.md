@@ -46,7 +46,14 @@ A country looks like `{ "id": 1, "code": "SE", "name": "Sverige", "capital": "St
 
 ## Quiz API
 
-A quiz is played in three requests. Only `beginner` is supported so far; other difficulties return `400 Unknown difficulty`.
+A quiz is played in three requests. `beginner` and `medium` are supported so far; other difficulties return `400 Unknown difficulty`.
+
+| Level | Question | Answer field in `POST /api/results` | Correct answer |
+| --- | --- | --- | --- |
+| `beginner` | Flag + 2 country names | `country` | The country's name |
+| `medium` | Flag + 4 capitals | `capital` | The country's capital |
+
+Everything that differs between levels is configured in `src/quizLevels.js`. The rest of the quiz code is shared.
 
 | Method | Path | Who | Success |
 | --- | --- | --- | --- |
@@ -70,13 +77,13 @@ Guests can play and get their answers graded, but nothing is saved for them. For
 }
 ```
 
-Every quiz has 10 unique countries. Each beginner question has two shuffled options: the correct country and a wrong one from the same continent. The correct answer is never sent. Flags are loaded from `https://flagcdn.com/w640/${flagCode}.png`.
+Every quiz has 10 unique countries. The options are shuffled and the wrong ones come from the same continent when possible. A beginner question has 2 country names, a medium question 4 capitals (e.g. `["Oslo", "Stockholm", "Köpenhamn", "Helsingfors"]`). The correct answer is never sent. Flags are loaded from `https://flagcdn.com/w640/${flagCode}.png`.
 
 `attemptId` is `null` for guests. For logged in users the quiz is saved in `quiz_attempts` and `quiz_answers`, and the time starts now.
 
 ### Submit the answers
 
-`POST /api/results` with one answer per question. `country` is the chosen option, or `null` if the question was skipped:
+`POST /api/results` with one answer per question. The answer field is `country` for beginner and `capital` for medium. It holds the chosen option, or `null` if the question was skipped:
 
 ```json
 {
@@ -105,7 +112,9 @@ Response:
 }
 ```
 
+- Medium answers look like `{ "number": 1, "flagCode": "se", "capital": "Stockholm" }`, and `answer` / `correctAnswer` in the response are capitals. Sending the wrong field for the level returns `400`.
 - Logged in users are graded against the countries saved when the quiz started, not the flag codes in the request. The time is calculated by the database.
+- Each level has its own highscore and stats.
 - A highscore has more correct answers, or the same score in less time. The first finished quiz on a level is not a new highscore.
 - Guests send `"attemptId": null` and get `saved: false`, `durationSeconds: null`, `newHighscore: false` and `previousBest: null`. They are graded by looking up the flag code.
 
