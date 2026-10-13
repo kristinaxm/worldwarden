@@ -7,7 +7,7 @@ const levels = {
   medium: { category: 'Huvudstäder', difficulty: 'Medel' },
 }
 
-export function useResults(difficulty = 'beginner') {
+export function useResults(difficulties = Object.keys(levels)) {
   const { user } = useAuth()
   const results = ref([])
   const loading = ref(false)
@@ -22,7 +22,9 @@ export function useResults(difficulty = 'beginner') {
     if (!user.value) return
 
     try {
-      const data = await request(`/results?difficulty=${difficulty}`)
+      const data = (await Promise.all(
+        difficulties.map((difficulty) => request(`/results?difficulty=${difficulty}`)),
+      )).flat()
       if (current !== version) return
       results.value = data.map((result) => {
         let streak = 0

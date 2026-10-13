@@ -22,7 +22,7 @@ const { results, loading, error, load } = useResults()
 
 // Senast spelade quiz först
 const sortedResults = computed(() =>
-  [...results.value].sort((a, b) => new Date(b.playedAt) - new Date(a.playedAt)),
+  [...results.value].sort((a, b) => new Date(b.playedAt) - new Date(a.playedAt) || b.id - a.id),
 )
 
 function formatDate(value) {
