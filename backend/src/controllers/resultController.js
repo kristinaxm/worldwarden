@@ -54,7 +54,16 @@ async function stats(req, res) {
   res.json(await resultService.getStats(req.user.id, difficulty))
 }
 
+async function history(req, res) {
+  const { difficulty } = req.query
+  if (!SUPPORTED_DIFFICULTIES.includes(difficulty)) {
+    return res.status(400).json({ error: 'Unknown difficulty' })
+  }
+  res.json(await resultService.getHistory(req.user.id, difficulty))
+}
+
 module.exports = {
   submit,
   stats,
+  history,
 }

@@ -195,7 +195,49 @@ async function submitResults({ attemptId, difficulty, answers }, user) {
 //#endregion
 
 
+async function getHistory(userId, difficulty) {
+  const [rows] = await pool.execute(
+    `SELECT a.id, a.difficulty, a.score, a.total_questions AS total,
+            TIMESTAMPDIFF(SECOND, a.started_at, a.completed_at) AS durationSeconds,
+            a.completed_at AS completedAt, q.question_number AS number,
+            q.country_answer, q.capital_answer, q.is_correct AS correct,
+            c.code, c.name, c.capital
+     FROM quiz_attempts a
+     JOIN quiz_answers q ON q.attempt_id = a.id
+     JOIN countries c ON c.id = q.country_id
+     WHERE a.user_id = ? AND a.difficulty = ? AND a.completed_at IS NOT NULL
+     ORDER BY a.completed_at DESC, a.id DESC, q.question_number`,
+    [userId, difficulty],
+  )
+  const results = new Map()
+  const level = LEVELS[difficulty]
+
+  for (const row of rows) {
+    if (!results.has(row.id)) {
+      results.set(row.id, {
+        id: row.id,
+        difficulty: row.difficulty,
+        score: row.score,
+        total: row.total,
+        durationSeconds: row.durationSeconds,
+        completedAt: row.completedAt,
+        answers: [],
+      })
+    }
+    results.get(row.id).answers.push({
+      number: row.number,
+      flagCode: row.code.toLowerCase(),
+      answer: row[level.answerColumn],
+      correct: Boolean(row.correct),
+      correctAnswer: level.correctAnswer(row),
+    })
+  }
+
+  return [...results.values()]
+}
+
 module.exports = {
   submitResults,
   getStats,
+  getHistory,
 }
