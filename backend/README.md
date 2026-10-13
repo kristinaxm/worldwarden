@@ -62,9 +62,9 @@ Everything that differs between levels is configured in `src/quizLevels.js`. The
 | POST | `/api/questions` | Everyone | `201` with 10 questions. Logged in users also get a saved attempt |
 | POST | `/api/results` | Everyone | `200` with the graded answers. Saved only for logged in users |
 
-Guests can play and get their answers graded, but nothing is saved for them. For logged in users the session cookie decides who the quiz belongs to.
+Guests can play `beginner` and get their answers graded, but nothing is saved for them and they collect no XP. For logged in users the session cookie decides who the quiz belongs to.
 
-Result history requires a supported difficulty (`beginner` or `medium`). It returns only the current user's completed attempts, or `[]` when none exist. Each result contains `id`, `difficulty`, `score`, `total`, `durationSeconds`, `completedAt`, and ordered `answers` with the same answer shape as quiz submission. Guests receive `401`; an unknown difficulty receives `400`.
+Result history requires a supported difficulty (`beginner` or `medium`). It returns only the current user's completed attempts, or `[]` when none exist. Each result contains `id`, `difficulty`, `score`, `total`, `xpEarned`, `durationSeconds`, `completedAt`, and ordered `answers` with the same answer shape as quiz submission. Guests receive `401`; an unknown difficulty receives `400`.
 
 ### Start a quiz
 
@@ -121,7 +121,9 @@ Response:
 - A highscore has more correct answers, or the same score in less time. The first finished quiz on a level is not a new highscore.
 - Guests send `"attemptId": null` and get `saved: false`, `durationSeconds: null`, `newHighscore: false` and `previousBest: null`. They are graded by looking up the flag code.
 
-Errors: `400` for an unknown difficulty, an invalid `attemptId`, an unknown flag code, or anything other than 10 answers numbered 1–10. `404` if the quiz doesn't exist or belongs to another user, and `409` if it has already been submitted.
+Logged in users also get `xp` in the response (see [XP and levels](#xp-and-levels)). Guests get `"xp": null`. Every graded answer has `usedHint`.
+
+Errors: `400` for an unknown difficulty, an invalid `attemptId`, an unknown flag code, or anything other than 10 answers numbered 1–10. `403` if the difficulty is locked. `404` if the quiz doesn't exist or belongs to another user, and `409` if it has already been submitted.
 
 ### Stats
 
@@ -133,6 +135,48 @@ Errors: `400` for an unknown difficulty, an invalid `attemptId`, an unknown flag
   "best": { "score": 9, "total": 10, "durationSeconds": 90 }
 }
 ```
+
+## XP and levels
+
+XP is only calculated by the server, when a logged in user's quiz is submitted. The rules live in `src/xpLevels.js`.
+
+| Difficulty | XP per correct answer | With hint | Unlocked at |
+| --- | --- | --- | --- |
+| `beginner` | 50 | 25 | Level 1 (0 XP) |
+| `medium` | 100 | 50 | Level 2 (500 XP) |
+| `advanced` | 150 | 75 | Level 3 (1300 XP) |
+| `expert` | 200 | 100 | Level 4 (3000 XP) |
+
+- 10/10 correct gives +50 bonus XP, also when hints were used.
+- XP is saved per quiz in `quiz_attempts.xp`. Total XP is always `SUM(xp)` of finished quizzes, and the level is calculated from it. Nothing else is stored.
+- Guests collect no XP and can only play `beginner`. Starting or submitting a locked difficulty returns `403`.
+- All four difficulties have XP values, so a new quiz level gets XP as soon as it is added to `src/quizLevels.js`.
+- Migration `012` gives XP to quizzes finished before XP existed.
+
+| Method | Path | Who | Success |
+| --- | --- | --- | --- |
+| GET | `/api/profile/xp` | Logged in | `200` with total XP, level and unlocked difficulties |
+| POST | `/api/questions/hint` | Logged in | `200` with the hint for one question |
+
+`GET /api/profile/xp` (the `xp` object in `POST /api/results` has the same fields, plus `earned` and `leveledUp`):
+
+```json
+{
+  "totalXp": 650,
+  "level": { "level": 2, "name": "Medel", "minXp": 500, "maxXp": 1299, "unlocks": "medium" },
+  "nextLevel": { "level": 3, "name": "Avancerad", "minXp": 1300, "maxXp": 2999, "unlocks": "advanced" },
+  "unlockedDifficulties": ["beginner", "medium"],
+  "levels": [{ "level": 1, "name": "Nybörjare", "minXp": 0, "maxXp": 499, "unlocks": "beginner" }]
+}
+```
+
+`nextLevel` is `null` on the highest level, and its `maxXp` is `null`. `levels` holds all four levels.
+
+### Hints
+
+`POST /api/questions/hint` with `{ "attemptId": 42, "number": 3 }` returns `{ "number": 3, "hint": "Europa" }` and marks the question in `quiz_answers.used_hint`. A correct answer to that question then gives half XP. The client never sends whether a hint was used, so it can't be cheated.
+
+A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizLevels.js`. The hint must not be sent with the questions, otherwise it can be read without being counted. Errors: `400` if the level has no hints or the input is invalid, `401` for guests, `404` if the quiz doesn't exist or belongs to another user, and `409` if it is already finished.
 
 ## Storage and sessions
 

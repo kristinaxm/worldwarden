@@ -1,5 +1,6 @@
 const { pool } = require('../db.js')
 const countryService = require('./countryService.js')
+const { httpError } = require('../httpError.js')
 const { LEVELS, QUESTIONS_PER_QUIZ } = require('../quizLevels.js')
 
 
@@ -110,6 +111,37 @@ async function createQuiz(difficulty, user) {
 //#endregion
 
 
+//#region Hint
+// Logged-in users only: returns the hint for one question and marks it as used, so a correct
+// answer to it gives half XP. The flag is set here on the server – the client never sends it.
+async function useHint(userId, attemptId, number) {
+  const [[question]] = await pool.execute(
+    `SELECT quiz_attempts.user_id AS userId, quiz_attempts.difficulty, quiz_attempts.completed_at AS completedAt,
+            countries.code, countries.name, countries.capital, countries.continent
+     FROM quiz_attempts
+     JOIN quiz_answers ON quiz_answers.attempt_id = quiz_attempts.id
+     JOIN countries ON countries.id = quiz_answers.country_id
+     WHERE quiz_attempts.id = ? AND quiz_answers.question_number = ?`,
+    [attemptId, number],
+  )
+  if (!question || question.userId !== userId) throw httpError(404, 'Quiz not found')
+  if (question.completedAt) throw httpError(409, 'Quiz is already finished')
+
+  // A level gets hints by adding hint: (country) => ... in quizLevels.js
+  const level = LEVELS[question.difficulty]
+  if (!level?.hint) throw httpError(400, 'This difficulty has no hints')
+
+  await pool.execute(
+    'UPDATE quiz_answers SET used_hint = TRUE WHERE attempt_id = ? AND question_number = ?',
+    [attemptId, number],
+  )
+
+  return { number, hint: level.hint(question) }
+}
+//#endregion
+
+
 module.exports = {
   createQuiz,
+  useHint,
 }

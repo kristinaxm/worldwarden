@@ -2,10 +2,12 @@ const { pool } = require('../db.js')
 const countryService = require('./countryService.js')
 const { httpError } = require('../httpError.js')
 const { LEVELS } = require('../quizLevels.js')
+const { calculateXp, levelForXp, xpSummary } = require('../xpLevels.js')
+const xpService = require('./xpService.js')
 
 
 //#region Grading
-// questions: the correct country for each question – [{ number, code, name, capital }]
+// questions: the correct country for each question – [{ number, code, name, capital, usedHint }]
 // answers: what the user answered – [{ number, country }] or [{ number, capital }]
 // The level decides which answer field to read and what the correct answer is
 // (beginner: country / country name, medium: capital / capital).
@@ -23,6 +25,8 @@ function gradeAnswers(difficulty, questions, answers) {
       answer: givenAnswer,
       correct: givenAnswer === correctAnswer,
       correctAnswer,
+      // Set by the server when the hint was fetched (POST /api/questions/hint), never by the client
+      usedHint: Boolean(question.usedHint),
     }
   })
 }
@@ -102,6 +106,7 @@ async function gradeGuestAnswers(difficulty, answers) {
     durationSeconds: null,
     newHighscore: false,
     previousBest: null,
+    xp: null, // guests don't collect XP
     answers: gradedAnswers,
   }
 }
@@ -117,6 +122,10 @@ async function saveResult(userId, attemptId, difficulty, answers) {
   try {
     await connection.beginTransaction()
 
+    // Locks the user, so two quizzes submitted at the same time can't both read the same
+    // XP total before and report the same level-up twice
+    await connection.execute('SELECT id FROM users WHERE id = ? FOR UPDATE', [userId])
+
     // FOR UPDATE locks the row, so the same quiz can't be submitted twice at the same time
     const [[attempt]] = await connection.execute(
       'SELECT user_id, difficulty, completed_at FROM quiz_attempts WHERE id = ? FOR UPDATE',
@@ -127,7 +136,8 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     if (attempt.difficulty !== difficulty) throw httpError(400, 'Difficulty does not match the quiz')
 
     const [questions] = await connection.execute(
-      `SELECT quiz_answers.question_number AS number, countries.code, countries.name, countries.capital
+      `SELECT quiz_answers.question_number AS number, quiz_answers.used_hint AS usedHint,
+              countries.code, countries.name, countries.capital
        FROM quiz_answers JOIN countries ON countries.id = quiz_answers.country_id
        WHERE quiz_answers.attempt_id = ?
        ORDER BY quiz_answers.question_number`,
@@ -136,9 +146,11 @@ async function saveResult(userId, attemptId, difficulty, answers) {
 
     const gradedAnswers = gradeAnswers(difficulty, questions, answers)
     const score = countCorrect(gradedAnswers)
+    const xpEarned = calculateXp(difficulty, gradedAnswers)
 
     // Must be read before this quiz is marked as finished, otherwise it compares with itself
     const previousBest = await findBest(connection, userId, difficulty)
+    const xpBefore = await xpService.getTotalXp(connection, userId)
 
     // country_answer for beginner, capital_answer for medium. The column name comes from
     // quizLevels.js, never from the request, so it is safe to put in the SQL.
@@ -152,8 +164,8 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     }
 
     await connection.execute(
-      'UPDATE quiz_attempts SET score = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [score, attemptId],
+      'UPDATE quiz_attempts SET score = ?, xp = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [score, xpEarned, attemptId],
     )
 
     const [[{ durationSeconds }]] = await connection.execute(
@@ -171,6 +183,11 @@ async function saveResult(userId, attemptId, difficulty, answers) {
       // The first attempt is not a "new highscore" – there was no record to beat
       newHighscore: previousBest !== null && isBetter({ score, durationSeconds }, previousBest),
       previousBest,
+      xp: {
+        earned: xpEarned,
+        ...xpSummary(xpBefore + xpEarned),
+        leveledUp: levelForXp(xpBefore + xpEarned).level > levelForXp(xpBefore).level,
+      },
       answers: gradedAnswers,
     }
   } catch (err) {
@@ -197,7 +214,7 @@ async function submitResults({ attemptId, difficulty, answers }, user) {
 
 async function getHistory(userId, difficulty) {
   const [rows] = await pool.execute(
-    `SELECT a.id, a.difficulty, a.score, a.total_questions AS total,
+    `SELECT a.id, a.difficulty, a.score, a.total_questions AS total, a.xp,
             TIMESTAMPDIFF(SECOND, a.started_at, a.completed_at) AS durationSeconds,
             a.completed_at AS completedAt, q.question_number AS number,
             q.country_answer, q.capital_answer, q.is_correct AS correct,
@@ -219,6 +236,7 @@ async function getHistory(userId, difficulty) {
         difficulty: row.difficulty,
         score: row.score,
         total: row.total,
+        xpEarned: row.xp,
         durationSeconds: row.durationSeconds,
         completedAt: row.completedAt,
         answers: [],

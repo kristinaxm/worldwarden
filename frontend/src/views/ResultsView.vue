@@ -69,6 +69,7 @@ function formatDate(value) {
               <div class="result__meta">
                 <span class="result__badge">{{ result.difficulty }}</span>
                 <time :datetime="result.playedAt">📅 {{ formatDate(result.playedAt) }}</time>
+                <span class="result__xp">⭐ +{{ result.xpEarned }} XP</span>
               </div>
             </div>
 
@@ -344,6 +345,11 @@ function formatDate(value) {
   gap: 16px;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface-soft);
+}
+
+.result__xp {
+  color: #92400e;
+  font-weight: 700;
 }
 
 .result__stats {

@@ -2,11 +2,17 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useXp } from '@/composables/useXp'
 import { request } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
 const { user, pending: authPending } = useAuth()
+const { setXp, loadXp } = useXp()
+
+// XP from the submitted quiz, shown on the result screen. null for guests and mock levels.
+// { earned, totalXp, level, leveledUp, ... } – see POST /api/results in the backend README
+const xpResult = ref(null)
 
 const difficulty = computed(() => route.params.difficulty)
 const connectedLevels = { beginner: 'country', medium: 'capital' }
@@ -362,6 +368,7 @@ function createQuiz() {
   attemptId.value = null
   submission.value = null
   resultSaved.value = false
+  xpResult.value = null
   quizError.value = ''
 
   questionIndex.value = 0
@@ -396,8 +403,15 @@ async function startQuiz() {
     }
     quizStarted.value = true
     startTimer()
-  } catch {
-    quizError.value = 'Det gick inte att starta quizet. Försök igen.'
+  } catch (err) {
+    // 403: the difficulty is above the player's level, or the player is a guest
+    if (err.status === 403) {
+      quizError.value = user.value
+        ? 'Den här nivån är låst. Samla mer XP för att låsa upp den.'
+        : 'Logga in för att spela den här nivån.'
+    } else {
+      quizError.value = 'Det gick inte att starta quizet. Försök igen.'
+    }
   } finally {
     quizPending.value = false
   }
@@ -867,6 +881,15 @@ async function finishQuiz() {
     } : null
     quizFinished.value = true
     resultSaved.value = Boolean(result.saved || result.id)
+    if (result.xp) {
+      // Updates the XP card and the locks on the home page too
+      xpResult.value = result.xp
+      setXp(result.xp)
+    } else if (result.id) {
+      // Already submitted (409) – the history only has the XP for this quiz
+      xpResult.value = { earned: result.xpEarned, leveledUp: false }
+      loadXp()
+    }
     loadStoredResults()
   } catch {
     quizError.value = 'Det gick inte att lämna in quizet. Dina svar finns kvar. Försök igen.'
@@ -1234,7 +1257,18 @@ createQuiz()
           <p class="result-percentage">
             Du klarade {{ percentage }}%
           </p>
-          <p v-if="connected && !resultSaved" class="result-message">Resultatet sparades inte. Logga in innan du startar ett quiz för att spara dina resultat.</p>
+          <p v-if="connected && !resultSaved" class="result-message">Resultatet sparades inte och du fick ingen XP. Logga in innan du startar ett quiz för att spara dina resultat och samla XP.</p>
+          <!-- XP - ONLY FOR SAVED QUIZZES -->
+          <div v-if="xpResult" class="result-xp" role="status">
+            <strong>+{{ xpResult.earned }} XP</strong>
+            <span v-if="xpResult.leveledUp">
+              ⭐ Ny nivå: {{ xpResult.level.level }} · {{ xpResult.level.name }}! {{ xpResult.level.name }}-quizet är upplåst.
+            </span>
+            <small v-if="xpResult.totalXp !== undefined">
+              Totalt {{ xpResult.totalXp }} XP
+              <template v-if="xpResult.nextLevel"> · {{ xpResult.nextLevel.minXp - xpResult.totalXp }} XP kvar till {{ xpResult.nextLevel.name }}</template>
+            </small>
+          </div>
           <!-- NEW HIGHSCORE - ONLY WHEN AN EARLIER RECORD WAS BEATEN -->
           <div v-if="newHighscore" class="result-highscore" role="status">
             <strong>🎉 Nytt highscore!</strong>
@@ -1869,6 +1903,33 @@ createQuiz()
         small {
           font-size: 0.85rem;
           opacity: 0.85;
+        }
+      }
+
+      .result-xp {
+        max-width: 560px;
+        margin-top: 14px;
+        padding: 12px 22px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        background: #fef3c7;
+        border: 2px solid #fbbf24;
+        border-radius: 12px;
+        color: #92400e;
+        text-align: center;
+
+        strong {
+          font-size: 1.3rem;
+        }
+
+        span {
+          font-weight: 700;
+        }
+
+        small {
+          font-size: 0.85rem;
         }
       }
 
