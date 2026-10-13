@@ -8,6 +8,12 @@ Start the database and backend using [backend/README.md](../backend/README.md), 
 
 This template should help get you started developing with Vue 3 in Vite.
 
+## Quiz and results
+
+Beginner and medium quizzes load questions, submit answers, and fetch latest/best scores through `/api`. Logged-in players' completed quizzes from both levels appear in Mina resultat, newest first, including individual answers, skipped questions, time, and best streak. Guests can play but their results are not saved. Existing localStorage summaries are not imported.
+
+Advanced and expert still use local mock quizzes. `connectedLevels` in `QuizView.vue` selects the submitted answer field for each connected level. `useResults` loads both supported levels by default; pass an array such as `['medium']` to show a single level.
+
 ## Recommended IDE Setup
 
 [VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).

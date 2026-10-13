@@ -9,5 +9,6 @@ router.post('/', loadUser, resultController.submit)
 
 // Stats only exist for logged-in users
 router.get('/stats', requireUser, resultController.stats)
+router.get('/', requireUser, resultController.history)
 
 module.exports = router

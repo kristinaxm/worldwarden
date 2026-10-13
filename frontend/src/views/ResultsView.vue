@@ -18,11 +18,11 @@ const categoryImages = {
 }
 
 const { user, pending } = useAuth()
-const { results } = useResults()
+const { results, loading, error, load } = useResults()
 
 // Senast spelade quiz först
 const sortedResults = computed(() =>
-  [...results.value].sort((a, b) => new Date(b.playedAt) - new Date(a.playedAt)),
+  [...results.value].sort((a, b) => new Date(b.playedAt) - new Date(a.playedAt) || b.id - a.id),
 )
 
 function formatDate(value) {
@@ -46,8 +46,12 @@ function formatDate(value) {
         <p class="results-header__tagline">Se hur det gick – fråga för fråga.</p>
       </div>
 
-      <!-- NO RESULTS -->
-      <div v-if="!sortedResults.length" class="results-empty">
+      <div v-if="loading" class="results-empty" role="status">Laddar resultat…</div>
+      <div v-else-if="error" class="results-empty" role="alert">
+        <span>{{ error }}</span>
+        <button class="retry-button" type="button" @click="load">Försök igen</button>
+      </div>
+      <div v-else-if="!sortedResults.length" class="results-empty">
         <div class="results-empty__icon">🌍</div>
         <strong>Du har inte spelat något quiz än</strong>
         <span>Välj ett quiz på startsidan och kom tillbaka hit.</span>
@@ -105,16 +109,16 @@ function formatDate(value) {
                 v-for="(question, index) in result.questions"
                 :key="index"
                 class="result__question"
-                :class="{ 'result__question--wrong': question.answer !== question.correctAnswer }"
+                :class="{ 'result__question--wrong': !question.correct }"
               >
                 <span class="result__number">{{ index + 1 }}</span>
                 <img v-if="question.image" class="result__flag" :src="question.image" alt="" />
                 <span v-else class="result__subject">{{ question.subject }} →</span>
                 <span class="result__answer">
                   <strong>{{ question.correctAnswer }}</strong>
-                  <small v-if="question.answer !== question.correctAnswer">Ditt svar: {{ question.answer }}</small>
+                  <small v-if="!question.correct">Ditt svar: {{ question.answer || 'Överhoppad' }}</small>
                 </span>
-                <span class="result__icon">{{ question.answer === question.correctAnswer ? '✓' : '×' }}</span>
+                <span class="result__icon">{{ question.correct ? '✓' : '×' }}</span>
               </li>
             </ol>
           </div>
@@ -125,6 +129,15 @@ function formatDate(value) {
 </template>
 
 <style scoped>
+.retry-button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
+}
+
 .results-page {
   display: flex;
   flex-direction: column;

@@ -58,10 +58,13 @@ Everything that differs between levels is configured in `src/quizLevels.js`. The
 | Method | Path | Who | Success |
 | --- | --- | --- | --- |
 | GET | `/api/results/stats?difficulty=beginner` | Logged in | `200` with the latest result and highscore for the quiz intro |
+| GET | `/api/results?difficulty=beginner` | Logged in | `200` with completed quizzes and their answers, newest first |
 | POST | `/api/questions` | Everyone | `201` with 10 questions. Logged in users also get a saved attempt |
 | POST | `/api/results` | Everyone | `200` with the graded answers. Saved only for logged in users |
 
 Guests can play and get their answers graded, but nothing is saved for them. For logged in users the session cookie decides who the quiz belongs to.
+
+Result history requires a supported difficulty (`beginner` or `medium`). It returns only the current user's completed attempts, or `[]` when none exist. Each result contains `id`, `difficulty`, `score`, `total`, `durationSeconds`, `completedAt`, and ordered `answers` with the same answer shape as quiz submission. Guests receive `401`; an unknown difficulty receives `400`.
 
 ### Start a quiz
 
