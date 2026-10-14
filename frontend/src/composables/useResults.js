@@ -43,6 +43,7 @@ export function useResults(difficulties = Object.keys(levels)) {
           wrong: result.total - result.score,
           totalQuestions: result.total,
           percentage: Math.round(result.score / result.total * 100),
+          xpEarned: result.xpEarned,
           bestStreak,
           time: minutes ? `${minutes} min ${seconds} s` : `${seconds} s`,
           questions: result.answers.map((answer) => ({

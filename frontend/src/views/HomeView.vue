@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useXp } from '@/composables/useXp'
 
 import flagsImage from '@/assets/images/quizhero/flaggor.png'
 import capitalsImage from '@/assets/images/quizhero/huvudstäder.png'
@@ -59,7 +60,17 @@ function selectDifficulty(difficulty) {
   selectedDifficulty.value = difficulty
 }
 
+// Locks only show what the backend allows – the backend also stops locked quizzes (403)
+const { isLoggedIn, isUnlocked, levelThatUnlocks } = useXp()
+
+function lockText(difficulty) {
+  if (!isLoggedIn.value) return 'Logga in för att spela'
+  const level = levelThatUnlocks(difficulty)
+  return level ? `Låses upp på nivå ${level.level} (${level.minXp} XP)` : 'Låst'
+}
+
 function startQuiz(difficulty) {
+  if (!isUnlocked(difficulty)) return
   router.push({
     name: 'quiz',
     params: {
@@ -133,14 +144,26 @@ function startQuiz(difficulty) {
       </div>
 
       <div class="quiz-grid">
-        <article v-for="quiz in filteredQuizCards" :key="quiz.difficultyKey" class="quiz-card">
+        <article
+          v-for="quiz in filteredQuizCards"
+          :key="quiz.difficultyKey"
+          class="quiz-card"
+          :class="{ 'quiz-card--locked': !isUnlocked(quiz.difficultyKey) }"
+        >
           <div class="quiz-card__image" :style="{backgroundImage: `url(${quiz.image})`}"/>
           <div class="quiz-card__content">
             <h3>{{ quiz.title }}</h3>
             <p>{{ quiz.description }}</p>
             <small>{{ quiz.category }}</small>
-            <button class="quiz-card__button" @click="startQuiz(quiz.difficultyKey)">
+            <button
+              v-if="isUnlocked(quiz.difficultyKey)"
+              class="quiz-card__button"
+              @click="startQuiz(quiz.difficultyKey)"
+            >
               Spela quiz
+            </button>
+            <button v-else class="quiz-card__button" disabled>
+              <span aria-hidden="true">🔒</span> {{ lockText(quiz.difficultyKey) }}
             </button>
           </div>
         </article>
@@ -414,6 +437,25 @@ function startQuiz(difficulty) {
 
           &:hover {
             background: var(--color-primary-dark);
+          }
+
+          &:disabled {
+            background: var(--color-surface-soft);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+          }
+        }
+
+        /* Difficulty above the player's level (or not beginner for guests) */
+        &.quiz-card--locked {
+          .quiz-card__image {
+            filter: grayscale(1);
+            opacity: 0.6;
+          }
+
+          &:hover {
+            transform: none;
+            box-shadow: none;
           }
         }
       }

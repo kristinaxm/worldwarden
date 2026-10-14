@@ -1,4 +1,5 @@
 const resultService = require('../services/resultService.js')
+const xpService = require('../services/xpService.js')
 const { LEVELS, QUESTIONS_PER_QUIZ, SUPPORTED_DIFFICULTIES } = require('../quizLevels.js')
 
 // Exactly one answer per question (number 1–10).
@@ -38,7 +39,10 @@ async function submit(req, res) {
     return res.status(400).json({ error: `Answers must contain exactly ${QUESTIONS_PER_QUIZ} valid answers` })
   }
 
-  // req.user is set by loadUser: the logged-in user, or null for guests
+  // req.user is set by loadUser: the logged-in user, or null for guests.
+  // 403 if the difficulty is locked (also for quizzes started before logging in).
+  await xpService.assertCanPlay(req.user, difficulty)
+
   const result = await resultService.submitResults({ attemptId, difficulty, answers }, req.user)
   res.json(result)
 }

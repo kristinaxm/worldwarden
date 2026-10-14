@@ -1,24 +1,28 @@
 <script setup>
-import { onMounted } from 'vue'
 import { useXp } from '@/composables/useXp'
 
+// useXp hämtar XP från backend när komponenten visas
 const {
   totalXp,
   currentLevel,
   nextLevel,
-  xpInLevel,
-  xpForLevel,
   xpToNextLevel,
   progress,
+  loading,
+  error,
   loadXp,
 } = useXp()
-
-// Hämta XP när komponenten laddas
-onMounted(loadXp)
 </script>
 
 <template>
-  <div class="xp-card">
+  <div v-if="error" class="xp-card xp-card--error" role="alert">
+    <p>{{ error }}</p>
+    <button type="button" class="xp-card__retry" :disabled="loading" @click="loadXp">
+      Försök igen
+    </button>
+  </div>
+
+  <div v-else class="xp-card" :aria-busy="loading">
     <div class="xp-card__header">
       <div>
         <p class="xp-card__label">Din nivå</p>
@@ -64,6 +68,34 @@ onMounted(loadXp)
   box-shadow: var(--shadow-small);
 }
 
+.xp-card--error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.xp-card__retry {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-primary-dark);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
 
 .xp-card__header {
   display: flex;
