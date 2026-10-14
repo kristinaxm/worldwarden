@@ -20,6 +20,25 @@ const LEVELS = {
     answerColumn: 'capital_answer',
     correctAnswer: (country) => country.capital,
   },
+
+  // Flag + text field (country name)
+  advanced: {
+    optionCount: 0, // no options, just a text field
+    answerField: 'country',
+    answerColumn: 'country_answer',
+    correctAnswer: (country) => country.name,
+    hint: (country) => country.continent,
+  },
+
+  // Flag + text fields (country name + capital)
+  expert: {
+    optionCount: 0,
+    answerField: 'country',
+    answerColumn: 'country_answer',
+    correctAnswer: (country) => country.name,
+    capitalAnswer: (country) => country.capital,
+    hint: (country) => country.continent,
+  },
 }
 
 // Difficulties that can be played right now. Controllers use this to validate input.

@@ -37,6 +37,15 @@ function pickWrongCountries(country, allCountries, count) {
 // beginner = 2 country names, medium = 4 capitals.
 // The correct answer is never sent to the client and the options are shuffled.
 function buildQuestion(level, country, allCountries, number) {
+
+  if (level.optionCount === 0) {
+    return {
+      number,
+      flagCode: country.code.toLowerCase(),
+      answerField: level.answerField,
+      hint: level.hint ? level.hint(country) : null,
+    }
+  }
   const wrongCountries = pickWrongCountries(country, allCountries, level.optionCount - 1)
   const options = [country, ...wrongCountries].map(level.correctAnswer)
 
