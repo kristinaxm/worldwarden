@@ -5,6 +5,8 @@ import { useAuth } from '@/composables/useAuth'
 const levels = {
   beginner: { category: 'Flaggor', difficulty: 'Nybörjare' },
   medium: { category: 'Huvudstäder', difficulty: 'Medel' },
+  advanced: { category: 'Länder', difficulty: 'Avancerad' },
+  expert: { category: 'Länder & huvudstäder', difficulty: 'Expert' },
 }
 
 export function useResults(difficulties = Object.keys(levels)) {

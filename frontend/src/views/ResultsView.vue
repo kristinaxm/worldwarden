@@ -13,6 +13,7 @@ const categoryImages = {
   Flaggor: flagsImage,
   Huvudstäder: capitalsImage,
   Länder: countriesImage,
+  'Länder & huvudstäder': countriesImage,
   Världsdelar: continentsImage,
   'Hav & Sjöar': seasLakesImage,
 }
@@ -118,6 +119,10 @@ function formatDate(value) {
                 <span class="result__answer">
                   <strong>{{ question.correctAnswer }}</strong>
                   <small v-if="!question.correct">Ditt svar: {{ question.answer || 'Överhoppad' }}</small>
+                  <template v-if="question.correctCapital">
+                    <strong>{{ question.correctCapital }}</strong>
+                    <small v-if="!question.correct">Din huvudstad: {{ question.capitalAnswer || 'Överhoppad' }}</small>
+                  </template>
                 </span>
                 <span class="result__icon">{{ question.correct ? '✓' : '×' }}</span>
               </li>

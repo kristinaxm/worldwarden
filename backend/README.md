@@ -46,12 +46,14 @@ A country looks like `{ "id": 1, "code": "SE", "name": "Sverige", "capital": "St
 
 ## Quiz API
 
-A quiz is played in three requests. `beginner` and `medium` are supported so far; other difficulties return `400 Unknown difficulty`.
+A quiz is played in three requests. `beginner`, `medium`, `advanced`, and `expert` are supported; unknown difficulties return `400 Unknown difficulty`. Existing XP requirements apply when starting and submitting quizzes.
 
 | Level | Question | Answer field in `POST /api/results` | Correct answer |
 | --- | --- | --- | --- |
 | `beginner` | Flag + 2 country names | `country` | The country's name |
 | `medium` | Flag + 4 capitals | `capital` | The country's capital |
+| `advanced` | Flag + country text field | `country` | The country's name, ignoring case and surrounding whitespace |
+| `expert` | Flag + country and capital text fields | `country`, `capital` | Both answers must match, ignoring case and surrounding whitespace |
 
 Everything that differs between levels is configured in `src/quizLevels.js`. The rest of the quiz code is shared.
 
@@ -64,7 +66,7 @@ Everything that differs between levels is configured in `src/quizLevels.js`. The
 
 Guests can play `beginner` and get their answers graded, but nothing is saved for them and they collect no XP. For logged in users the session cookie decides who the quiz belongs to.
 
-Result history requires a supported difficulty (`beginner` or `medium`). It returns only the current user's completed attempts, or `[]` when none exist. Each result contains `id`, `difficulty`, `score`, `total`, `xpEarned`, `durationSeconds`, `completedAt`, and ordered `answers` with the same answer shape as quiz submission. Guests receive `401`; an unknown difficulty receives `400`.
+Result history requires a supported difficulty (`beginner`, `medium`, `advanced`, or `expert`). It returns only the current user's completed attempts, or `[]` when none exist. Each result contains `id`, `difficulty`, `score`, `total`, `xpEarned`, `durationSeconds`, `completedAt`, and ordered `answers` with the same answer shape as quiz submission. Guests receive `401`; an unknown difficulty receives `400`.
 
 ### Start a quiz
 
@@ -116,6 +118,7 @@ Response:
 ```
 
 - Medium answers look like `{ "number": 1, "flagCode": "se", "capital": "Stockholm" }`, and `answer` / `correctAnswer` in the response are capitals. Sending the wrong field for the level returns `400`.
+- Expert also requires `capital` on every submitted answer (`null` when skipped). Submission and history responses include `capitalAnswer` and `correctCapital` alongside the country answer. Both submitted answers are stored in `quiz_answers`.
 - Logged in users are graded against the countries saved when the quiz started, not the flag codes in the request. The time is calculated by the database.
 - Each level has its own highscore and stats.
 - A highscore has more correct answers, or the same score in less time. The first finished quiz on a level is not a new highscore.

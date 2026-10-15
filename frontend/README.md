@@ -10,9 +10,9 @@ This template should help get you started developing with Vue 3 in Vite.
 
 ## Quiz and results
 
-Beginner and medium quizzes load questions, submit answers, and fetch latest/best scores through `/api`. Logged-in players' completed quizzes from both levels appear in Mina resultat, newest first, including individual answers, skipped questions, time, and best streak. Guests can play but their results are not saved. Existing localStorage summaries are not imported.
+All four quiz levels load questions, submit answers, and fetch latest/best scores through `/api`. Logged-in players' completed quizzes appear in Mina resultat, newest first, including individual answers, skipped questions, time, XP, and best streak. Expert results show both the country and capital. Guests can play beginner but their results are not saved. Existing localStorage summaries are not imported.
 
-Advanced and expert still use local mock quizzes. `connectedLevels` in `QuizView.vue` selects the submitted answer field for each connected level. `useResults` loads both supported levels by default; pass an array such as `['medium']` to show a single level.
+`connectedLevels` in `QuizView.vue` selects the submitted answer field for each level; expert also submits `capital`. `useResults` loads all four levels by default; pass an array such as `['expert']` to show a single level. Existing XP requirements still control which quizzes a player can start.
 
 ## Recommended IDE Setup
 

@@ -5,6 +5,8 @@ const { LEVELS } = require('../quizLevels.js')
 const { calculateXp, levelForXp, xpSummary } = require('../xpLevels.js')
 const xpService = require('./xpService.js')
 
+const normalize = (value) => value?.trim().toLocaleLowerCase('sv-SE') ?? ''
+
 
 //#region Grading
 // questions: the correct country for each question – [{ number, code, name, capital, usedHint }]
@@ -18,13 +20,17 @@ function gradeAnswers(difficulty, questions, answers) {
     const answer = answers.find((item) => item.number === question.number)
     const givenAnswer = answer[level.answerField]
     const correctAnswer = level.correctAnswer(question)
+    const matches = ['advanced', 'expert'].includes(difficulty)
+      ? normalize(givenAnswer) === normalize(correctAnswer)
+      : givenAnswer === correctAnswer
 
     return {
       number: question.number,
       flagCode: question.code.toLowerCase(),
       answer: givenAnswer,
-      correct: givenAnswer === correctAnswer,
+      correct: matches && (!level.capitalAnswer || normalize(answer.capital) === normalize(level.capitalAnswer(question))),
       correctAnswer,
+      ...(level.capitalAnswer ? { capitalAnswer: answer.capital, correctCapital: level.capitalAnswer(question) } : {}),
       // Set by the server when the hint was fetched (POST /api/questions/hint), never by the client
       usedHint: Boolean(question.usedHint),
     }
@@ -152,14 +158,12 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     const previousBest = await findBest(connection, userId, difficulty)
     const xpBefore = await xpService.getTotalXp(connection, userId)
 
-    // country_answer for beginner, capital_answer for medium. The column name comes from
-    // quizLevels.js, never from the request, so it is safe to put in the SQL.
-    const { answerColumn } = LEVELS[difficulty]
-
     for (const answer of gradedAnswers) {
       await connection.execute(
-        `UPDATE quiz_answers SET ${answerColumn} = ?, is_correct = ? WHERE attempt_id = ? AND question_number = ?`,
-        [answer.answer, answer.correct ? 1 : 0, attemptId, answer.number],
+        'UPDATE quiz_answers SET country_answer = ?, capital_answer = ?, is_correct = ? WHERE attempt_id = ? AND question_number = ?',
+        [difficulty === 'medium' ? null : answer.answer,
+          difficulty === 'medium' ? answer.answer : answer.capitalAnswer ?? null,
+          answer.correct ? 1 : 0, attemptId, answer.number],
       )
     }
 
@@ -248,6 +252,7 @@ async function getHistory(userId, difficulty) {
       answer: row[level.answerColumn],
       correct: Boolean(row.correct),
       correctAnswer: level.correctAnswer(row),
+      ...(level.capitalAnswer ? { capitalAnswer: row.capital_answer, correctCapital: level.capitalAnswer(row) } : {}),
     })
   }
 
