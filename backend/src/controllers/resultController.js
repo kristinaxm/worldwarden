@@ -35,7 +35,8 @@ async function submit(req, res) {
   if (attemptId !== null && !(Number.isInteger(attemptId) && attemptId > 0)) {
     return res.status(400).json({ error: 'Invalid attemptId' })
   }
-  if (!isValidAnswers(answers, LEVELS[difficulty].answerField)) {
+  if (!isValidAnswers(answers, LEVELS[difficulty].answerField) ||
+      (difficulty === 'expert' && !isValidAnswers(answers, 'capital'))) {
     return res.status(400).json({ error: `Answers must contain exactly ${QUESTIONS_PER_QUIZ} valid answers` })
   }
 
