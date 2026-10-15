@@ -15,7 +15,7 @@ const { setXp, loadXp } = useXp()
 const xpResult = ref(null)
 
 const difficulty = computed(() => route.params.difficulty)
-const connectedLevels = { beginner: 'country', medium: 'capital' }
+const connectedLevels = { beginner: 'country', medium: 'capital', advanced: 'country', expert: 'country' }
 const connected = computed(() => Object.hasOwn(connectedLevels, difficulty.value))
 const attemptId = ref(null)
 const quizPending = ref(false)
@@ -850,6 +850,7 @@ async function finishQuiz() {
       number: answer.questionNumber,
       flagCode: answer.flagCode,
       [connectedLevels[difficulty.value]]: answer.skipped ? null : answer[`${connectedLevels[difficulty.value]}Answer`],
+      ...(difficulty.value === 'expert' ? { capital: answer.skipped ? null : answer.capitalAnswer } : {}),
     })),
   }
   quizPending.value = true
