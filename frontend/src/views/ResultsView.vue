@@ -4,18 +4,15 @@ import flagsImage from '@/assets/images/quizhero/flaggor.png'
 import capitalsImage from '@/assets/images/quizhero/huvudstäder.png'
 import countriesImage from '@/assets/images/quizhero/länder.png'
 import continentsImage from '@/assets/images/quizhero/världsdelar.png'
-import seasLakesImage from '@/assets/images/quizhero/havochsjöar.png'
 import LoginRequired from '@/components/LoginRequired.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useResults } from '@/composables/useResults'
 
 const categoryImages = {
+  Kontinenter: continentsImage,
   Flaggor: flagsImage,
-  Huvudstäder: capitalsImage,
   Länder: countriesImage,
-  'Länder & huvudstäder': countriesImage,
-  Världsdelar: continentsImage,
-  'Hav & Sjöar': seasLakesImage,
+  'Länder & huvudstäder': capitalsImage,
 }
 
 const { user, pending } = useAuth()

@@ -5,20 +5,20 @@
 const QUESTIONS_PER_QUIZ = 10
 
 const LEVELS = {
-  // Flag + 2 country names
+  // Flag + 2 continents
   beginner: {
     optionCount: 2,
     answerField: 'country', // field in POST /api/results answers
     answerColumn: 'country_answer', // column in quiz_answers
-    correctAnswer: (country) => country.name,
+    correctAnswer: (country) => country.continent,
   },
 
-  // Flag + 4 capitals
+  // Flag + 4 country names
   medium: {
     optionCount: 4,
-    answerField: 'capital',
-    answerColumn: 'capital_answer',
-    correctAnswer: (country) => country.capital,
+    answerField: 'country',
+    answerColumn: 'country_answer',
+    correctAnswer: (country) => country.name,
   },
 
   // Flag + text field (country name)

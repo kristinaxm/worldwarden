@@ -25,8 +25,31 @@ function shuffle(items) {
 // Picks `count` wrong answers for a question. Prefers countries on the same continent
 // Example: If question is Sweden it prefers countries in Europe (Norway, Denmark, Spain etc.)
 // If the continent has too few countries, the rest are taken from other continents.
-function pickWrongCountries(country, allCountries, count) {
+function pickWrongCountries(country, allCountries, count, difficulty) {
   const otherCountries = allCountries.filter((other) => other.id !== country.id)
+
+  if (difficulty === 'beginner') {
+    const uniqueContinents = new Map()
+    for (const c of shuffle(otherCountries)) {
+      if (c.continent === country.continent) continue
+      if (!uniqueContinents.has(c.continent)) {
+        uniqueContinents.set(c.continent, c)
+      }
+    }
+    return [...uniqueContinents.values()].slice(0, count)
+  }
+
+  if (difficulty === 'medium') {
+    const uniqueCountries = new Map()
+    for (const c of shuffle(otherCountries)) {
+      if (c.continent === country.continent) continue
+      if (!uniqueCountries.has(c.continent)) {
+        uniqueCountries.set(c.continent, c)
+      }
+    }
+    return shuffle([...uniqueCountries.values()]).slice(0, count)
+  }
+
   const sameContinent = shuffle(otherCountries.filter((other) => other.continent === country.continent))
   const otherContinents = shuffle(otherCountries.filter((other) => other.continent !== country.continent))
 
@@ -35,9 +58,9 @@ function pickWrongCountries(country, allCountries, count) {
 
 // Builds one question: a flag and the options for the level, one of them correct.
 // The level decides how many options there are and what they are:
-// beginner = 2 country names, medium = 4 capitals.
+// beginner = 2 continents, medium = 4 countries.
 // The correct answer is never sent to the client and the options are shuffled.
-function buildQuestion(level, country, allCountries, number) {
+function buildQuestion(level, country, allCountries, number, difficulty) {
 
   if (level.optionCount === 0) {
     return {
@@ -47,7 +70,7 @@ function buildQuestion(level, country, allCountries, number) {
       hint: level.hint ? level.hint(country) : null,
     }
   }
-  const wrongCountries = pickWrongCountries(country, allCountries, level.optionCount - 1)
+  const wrongCountries = pickWrongCountries(country, allCountries, level.optionCount - 1, difficulty)
   const options = [country, ...wrongCountries].map(level.correctAnswer)
 
   return {
@@ -106,7 +129,7 @@ async function createQuiz(difficulty, user) {
   const pickedCountries = shuffle(allCountries).slice(0, QUESTIONS_PER_QUIZ)
 
   const questions = pickedCountries.map((country, index) =>
-    buildQuestion(LEVELS[difficulty], country, allCountries, index + 1),
+    buildQuestion(LEVELS[difficulty], country, allCountries, index + 1, difficulty),
   )
 
   const attemptId = user ? await saveAttempt(user.id, difficulty, pickedCountries) : null

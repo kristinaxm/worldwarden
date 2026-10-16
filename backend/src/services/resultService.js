@@ -99,7 +99,7 @@ async function gradeGuestAnswers(difficulty, answers) {
     .map((answer) => {
       const country = countriesByCode.get(answer.flagCode.toLowerCase())
       if (!country) throw httpError(400, 'Unknown flag code')
-      return { number: answer.number, code: country.code, name: country.name, capital: country.capital }
+      return { number: answer.number, code: country.code, name: country.name, capital: country.capital, continent: country.continent }
     })
     .sort((a, b) => a.number - b.number)
 
@@ -143,7 +143,7 @@ async function saveResult(userId, attemptId, difficulty, answers) {
 
     const [questions] = await connection.execute(
       `SELECT quiz_answers.question_number AS number, quiz_answers.used_hint AS usedHint,
-              countries.code, countries.name, countries.capital
+              countries.code, countries.name, countries.capital, countries.continent
        FROM quiz_answers JOIN countries ON countries.id = quiz_answers.country_id
        WHERE quiz_answers.attempt_id = ?
        ORDER BY quiz_answers.question_number`,
@@ -159,13 +159,17 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     const xpBefore = await xpService.getTotalXp(connection, userId)
 
     for (const answer of gradedAnswers) {
-      await connection.execute(
-        'UPDATE quiz_answers SET country_answer = ?, capital_answer = ?, is_correct = ? WHERE attempt_id = ? AND question_number = ?',
-        [difficulty === 'medium' ? null : answer.answer,
-          difficulty === 'medium' ? answer.answer : answer.capitalAnswer ?? null,
-          answer.correct ? 1 : 0, attemptId, answer.number],
-      )
-    }
+  await connection.execute(
+    'UPDATE quiz_answers SET country_answer = ?, capital_answer = ?, is_correct = ? WHERE attempt_id = ? AND question_number = ?',
+    [
+      answer.answer,                       
+      answer.capitalAnswer ?? null,
+      answer.correct ? 1 : 0,
+      attemptId,
+      answer.number,
+    ],
+  )
+}
 
     await connection.execute(
       'UPDATE quiz_attempts SET score = ?, xp = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -222,7 +226,7 @@ async function getHistory(userId, difficulty) {
             TIMESTAMPDIFF(SECOND, a.started_at, a.completed_at) AS durationSeconds,
             a.completed_at AS completedAt, q.question_number AS number,
             q.country_answer, q.capital_answer, q.is_correct AS correct,
-            c.code, c.name, c.capital
+            c.code, c.name, c.capital, c.continent
      FROM quiz_attempts a
      JOIN quiz_answers q ON q.attempt_id = a.id
      JOIN countries c ON c.id = q.country_id
