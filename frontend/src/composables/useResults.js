@@ -3,8 +3,8 @@ import { request } from '@/api'
 import { useAuth } from '@/composables/useAuth'
 
 const levels = {
-  beginner: { category: 'Flaggor', difficulty: 'Nybörjare' },
-  medium: { category: 'Huvudstäder', difficulty: 'Medel' },
+  beginner: { category: 'Kontinenter', difficulty: 'Nybörjare' },
+  medium: { category: 'Länder', difficulty: 'Medel' },
   advanced: { category: 'Länder', difficulty: 'Avancerad' },
   expert: { category: 'Länder & huvudstäder', difficulty: 'Expert' },
 }
