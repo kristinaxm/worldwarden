@@ -149,7 +149,7 @@ async function createQuiz(difficulty, user) {
 async function useHint(userId, attemptId, number) {
   const [[question]] = await pool.execute(
     `SELECT quiz_attempts.user_id AS userId, quiz_attempts.difficulty, quiz_attempts.completed_at AS completedAt,
-            countries.code, countries.name, countries.capital, countries.continent
+            quiz_answers.used_hint AS usedHint, countries.code, countries.name, countries.capital, countries.continent
      FROM quiz_attempts
      JOIN quiz_answers ON quiz_answers.attempt_id = quiz_attempts.id
      JOIN countries ON countries.id = quiz_answers.country_id
@@ -158,6 +158,12 @@ async function useHint(userId, attemptId, number) {
   )
   if (!question || question.userId !== userId) throw httpError(404, 'Quiz not found')
   if (question.completedAt) throw httpError(409, 'Quiz is already finished')
+
+  if (question.usedHint) {
+  // Hint redan använd – returnera samma
+  const level = LEVELS[question.difficulty]
+  return { number, hint: level.hint(question) }
+}
 
   // A level gets hints by adding hint: (country) => ... in quizLevels.js
   const level = LEVELS[question.difficulty]
