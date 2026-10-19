@@ -6,6 +6,7 @@ import { useXp } from '@/composables/useXp'
 import flagsImage from '@/assets/images/quizhero/flaggor.png'
 import capitalsImage from '@/assets/images/quizhero/huvudstäder.png'
 import countriesImage from '@/assets/images/quizhero/länder.png'
+import continentsImage from '@/assets/images/quizhero/världsdelar.png'
 
 const router = useRouter()
 
@@ -14,19 +15,19 @@ const selectedDifficulty = ref('Alla')
 const quizCards = [
   {
     title: 'Nybörjare',
-    description: 'Känn igen landet genom dess flagga och välj mellan två svarsalternativ.',
+    description: 'Gissa vilken kontinent flaggan tillhör och välj mellan två svarsalternativ.',
     difficulty: 'Nybörjare',
     difficultyKey: 'beginner',
-    category: 'Flaggor',
-    image: flagsImage,
+    category: 'Kontinenter',
+    image: continentsImage,
   },
   {
     title: 'Medel',
-    description: 'Se flaggan och välj rätt huvudstad bland fyra svarsalternativ.',
+    description: 'Gissa vilket land flaggan tillhör och välj mellan fyra svarsalternativ.',
     difficulty: 'Medel',
     difficultyKey: 'medium',
-    category: 'Huvudstäder',
-    image: capitalsImage,
+    category: 'Länder',
+    image: flagsImage,
   },
   {
     title: 'Avancerad',
@@ -42,7 +43,7 @@ const quizCards = [
     difficulty: 'Expert',
     difficultyKey: 'expert',
     category: 'Länder & huvudstäder',
-    image: countriesImage,
+    image: capitalsImage,
   },
 ]
 

@@ -15,7 +15,7 @@ const { setXp, loadXp } = useXp()
 const xpResult = ref(null)
 
 const difficulty = computed(() => route.params.difficulty)
-const connectedLevels = { beginner: 'country', medium: 'capital', advanced: 'country', expert: 'country' }
+const connectedLevels = { beginner: 'country', medium: 'country', advanced: 'country', expert: 'country' }
 const connected = computed(() => Object.hasOwn(connectedLevels, difficulty.value))
 const attemptId = ref(null)
 const quizPending = ref(false)
@@ -203,19 +203,19 @@ const difficultyInfo = computed(() => {
   const levels = {
     beginner: {
       label: 'NYBÖRJARE',
-      category: 'FLAGGOR',
-      title: 'Flaggor – Nybörjare',
-      icon: '🚩',
-      description: 'Du ser en flagga och väljer vilket land den tillhör.',
+      category: 'KONTINENTER',
+      title: 'Kontinenter – Nybörjare',
+      icon: '🌍',
+      description: 'Du ser en flagga och väljer vilken kontinent landet (flaggan) tillhör.',
       answerType: '2 svarsalternativ'
     },
 
     medium: {
       label: 'MEDEL',
-      category: 'HUVUDSTÄDER',
-      title: 'Huvudstäder – Medel',
-      icon: '🏛️',
-      description: 'Du ser en flagga och väljer landets huvudstad.',
+      category: 'LÄNDER',
+      title: 'Länder – Medel',
+      icon: '🚩',
+      description: 'Du ser en flagga och väljer vilket land den tillhör.',
       answerType: '4 svarsalternativ'
     },
 
@@ -615,7 +615,7 @@ function checkCurrentAnswer() {
   if (difficulty.value === 'medium') {
     return (
       normalizeAnswer(selectedAnswer.value) ===
-      normalizeAnswer(question.value.capital)
+      normalizeAnswer(question.value.country)
     )
   }
 
@@ -665,7 +665,7 @@ function saveCurrentAnswer({ skipped = false } = {}) {
   }
 
   if (difficulty.value === 'medium') {
-    savedCapitalAnswer = selectedAnswer.value
+    savedCountryAnswer = selectedAnswer.value
   }
 
   if (difficulty.value === 'advanced') {
@@ -751,7 +751,7 @@ function loadSavedAnswer() {
 
   if (difficulty.value === 'medium') {
     selectedAnswer.value =
-      savedAnswer.capitalAnswer ?? ''
+      savedAnswer.countryAnswer ?? ''
   }
 
   if (difficulty.value === 'advanced') {
@@ -1107,7 +1107,7 @@ createQuiz()
             <img :src="question.flagUrl" alt="Flagga" class="quiz-flag">
           </div>
           <h1 class="quiz-question">
-            Vilket land tillhör denna flagga?
+            Vilken kontinent tillhör denna flagga?
           </h1>
           <div class="answers answers--two">
             <button v-for="answer in question.countryOptions" :key="answer" type="button" class="answer-button" :class="{
@@ -1125,10 +1125,10 @@ createQuiz()
             <img :src="question.flagUrl" alt="Flagga" class="quiz-flag">
           </div>
           <h1 class="quiz-question">
-            Vilken huvudstad tillhör landet på flaggan?
+            Vilket land tillhör denna flagga?
           </h1>
           <div class="answers answers--four">
-            <button v-for="answer in question.capitalOptions" :key="answer" type="button" class="answer-button" :class="{
+            <button v-for="answer in question.countryOptions" :key="answer" type="button" class="answer-button" :class="{
                 'answer-button--selected': selectedAnswer === answer
               }"
               @click="selectAnswer(answer)">
