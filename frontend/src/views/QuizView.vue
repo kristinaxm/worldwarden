@@ -21,6 +21,9 @@ const attemptId = ref(null)
 const quizPending = ref(false)
 const quizError = ref('')
 const submission = ref(null)
+const hint = ref(null)
+const hintPending = ref(false)
+const hintError = ref('')
 const resultSaved = ref(false)
 const statsError = ref('')
 let statsVersion = 0
@@ -417,6 +420,31 @@ async function startQuiz() {
   }
 }
 
+async function showHint() {
+  if (hintPending.value || hint.value) return
+
+  hintPending.value = true
+  hintError.value = ''
+
+  try {
+    const result = await request('/questions/hint', {
+      attemptId: attemptId.value,
+      number: questionNumber.value,
+   })
+   hint.value = result.hint
+  } catch (err) {
+    if (err.status === 403) {
+      hintError.value = 'Du måste vara inloggad för att få ledtrådar!'
+    } else if (err.status === 400) {
+      hintError.value = 'Du har redan använt ledtråden för den här frågan.'
+    } else {
+      hintError.value = 'Det gick inte att hämta ledtråden.'
+    }
+  } finally {
+    hintPending.value = false
+  }
+}
+
 //#endregion
 
 
@@ -645,6 +673,8 @@ function resetInputs() {
   selectedAnswer.value = ''
   countryAnswer.value = ''
   capitalAnswer.value = ''
+  hint.value = null
+  hintError.value = ''
 }
 
 //#endregion
@@ -1153,9 +1183,13 @@ createQuiz()
           </div>
 
           <div class="quiz-form-actions">
-            <!-- SHOW CLUE. SHOULD DO LATER? -->
-            <button type="button" class="button button--secondary">
-              Visa ledtråd
+            <!-- SHOW CLUE -->
+             <button
+             type="button"
+             class="button button--secondary"
+             :disabled="hintPending || hint || !connected || !attemptId"
+             @click="showHint">
+              {{ hint ? 'Ledtråd visas' : hintPending ? 'Hämtar…' : 'Visa ledtråd' }}
             </button>
             <button type="button" class="button button--primary" :disabled="!countryAnswer.trim()" @click="submitAnswer">
               {{
@@ -1165,6 +1199,12 @@ createQuiz()
               }}
             </button>
           </div>
+          <p v-if="hint" class="quiz-hint">
+            💡 Ledtråd: {{ hint }}
+          </p>
+          <p v-if="hintError" class="quiz-hint quiz-hint--error">
+    {{ hintError }}
+  </p>
         </div>
 
         <!-- EXPERT -->
@@ -1190,8 +1230,12 @@ createQuiz()
             </div>
           </div>
           <div class="quiz-form-actions">
-            <!-- SHOW CLUE. SHOULD DO LATER? -->
-            <button type="button" class="button button--secondary">
+            <!-- SHOW CLUE -->
+           <button
+             type="button"
+             class="button button--secondary"
+             :disabled="hintPending || hint || !connected || !attemptId"
+             @click="showHint">
               Visa ledtråd
             </button>
             <button type="button" class="button button--primary" :disabled="!countryAnswer.trim() || !capitalAnswer.trim()" @click="submitAnswer">
@@ -1202,6 +1246,12 @@ createQuiz()
               }}
             </button>
           </div>
+           <p v-if="hint" class="quiz-hint">
+    💡 Ledtråd: {{ hint }}
+  </p>
+  <p v-if="hintError" class="quiz-hint quiz-hint--error">
+    {{ hintError }}
+  </p>
         </div>
 
         <!-- FOOTER UNDER QUIZ -->
@@ -1376,6 +1426,21 @@ createQuiz()
   gap: 12px;
   padding: 12px;
   border-radius: var(--radius-small);
+  background: var(--color-danger-light);
+  color: var(--color-danger-dark);
+}
+
+.quiz-hint {
+  margin-top: 12px;
+  padding: 12px 18px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: var(--radius-small);
+  font-weight: 700;
+  text-align: center;
+}
+
+.quiz-hint-error {
   background: var(--color-danger-light);
   color: var(--color-danger-dark);
 }
