@@ -4,6 +4,7 @@ import LoginRequired from '@/components/LoginRequired.vue'
 import ProfileInfo from '@/components/ProfileInfo.vue'
 import { useAuth } from '@/composables/useAuth'
 import XpCard from '@/components/XpCard.vue'
+import MedalsCard from '@/components/MedalsCard.vue'
 
 const { user, pending } = useAuth()
 </script>
@@ -25,6 +26,9 @@ const { user, pending } = useAuth()
 
       <!-- XP AND LEVEL -->
       <XpCard />
+
+      <!-- MEDALS -->
+      <MedalsCard />
 
       <!-- SHORTCUTS -->
       <nav class="profile-links" aria-label="Mitt konto">
