@@ -1,10 +1,26 @@
 <script setup>
-import { ref } from 'vue'
+import { nextTick, ref, useTemplateRef, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { MEDALS, medalImage } from '@/medals'
 import { useMedals } from '@/composables/useMedals'
 
-const { isUnlocked, unlockedCount } = useMedals()
+const { isUnlocked, unlockedCount, error, loadMedals } = useMedals()
+const route = useRoute()
+const card = useTemplateRef('card')
 const expanded = ref(false)
+
+// "Visa alla mina medaljer" in the medal popup links to /profil#medaljer:
+// open the card and scroll to it (also when already on the profile page)
+watch(
+  () => route.hash,
+  async (hash) => {
+    if (hash !== '#medaljer') return
+    expanded.value = true
+    await nextTick()
+    card.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  },
+  { immediate: true },
+)
 
 // Moves the tooltip sideways so it stays inside the card (the page content clips anything outside).
 // Calculated from the medal's center and the tooltip's width, not the tooltip's current position,
@@ -22,7 +38,13 @@ function placeTooltip(event) {
 </script>
 
 <template>
-  <section class="medals-card" :class="{ 'medals-card--expanded': expanded }" aria-labelledby="medals-title">
+  <section
+    id="medaljer"
+    ref="card"
+    class="medals-card"
+    :class="{ 'medals-card--expanded': expanded }"
+    aria-labelledby="medals-title"
+  >
     <div class="medals-card__header">
       <div>
         <h3 id="medals-title">Dina medaljer</h3>
@@ -46,6 +68,12 @@ function placeTooltip(event) {
           </svg>
         </button>
       </div>
+    </div>
+
+    <!-- ERROR -->
+    <div v-if="error" class="medals-card__error" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" @click="loadMedals">Försök igen</button>
     </div>
 
     <!-- MEDALS (the wrapper animates the height when opening and closing) -->
@@ -149,6 +177,36 @@ function placeTooltip(event) {
   &:focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 3px;
+  }
+}
+
+/* ERROR */
+.medals-card__error {
+  margin-top: 16px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: var(--radius-small);
+  background: var(--color-danger-light);
+  color: var(--color-danger-dark);
+  font-size: 14px;
+
+  button {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-primary-dark);
+    }
   }
 }
 
