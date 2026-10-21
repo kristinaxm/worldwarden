@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { MEDALS, medalImage } from '@/medals'
 import { useMedals } from '@/composables/useMedals'
@@ -7,7 +7,15 @@ import { useMedals } from '@/composables/useMedals'
 const { isUnlocked, unlockedCount, error, loadMedals } = useMedals()
 const route = useRoute()
 const card = useTemplateRef('card')
-const expanded = ref(false)
+const expanded = ref(true)
+
+// Unlocked medals are shown first. Groups without medals are hidden, so a new account only sees "Låsta medaljer".
+const groups = computed(() =>
+  [
+    { id: 'unlocked', title: 'Upplåsta medaljer', medals: MEDALS.filter((medal) => isUnlocked(medal.id)) },
+    { id: 'locked', title: 'Låsta medaljer', medals: MEDALS.filter((medal) => !isUnlocked(medal.id)) },
+  ].filter((group) => group.medals.length),
+)
 
 // "Visa alla mina medaljer" in the medal popup links to /profil#medaljer:
 // open the card and scroll to it (also when already on the profile page)
@@ -78,30 +86,37 @@ function placeTooltip(event) {
 
     <!-- MEDALS (the wrapper animates the height when opening and closing) -->
     <div class="medals-card__body" :inert="!expanded || null">
-      <ul id="medals-list" class="medals-card__grid">
-        <li
-          v-for="medal in MEDALS"
-          :key="medal.id"
-          class="medal"
-          :class="{ 'medal--locked': !isUnlocked(medal.id) }"
-          tabindex="0"
-          :aria-describedby="`medal-tip-${medal.id}`"
-          @mouseenter="placeTooltip"
-          @focus="placeTooltip"
-        >
-          <div class="medal__badge">
-            <img class="medal__image" :src="medalImage(medal.id)" alt="" />
-            <span v-if="!isUnlocked(medal.id)" class="medal__lock" aria-hidden="true">🔒</span>
-          </div>
-          <strong class="medal__name">{{ medal.name }}</strong>
-          <small class="medal__status">{{ isUnlocked(medal.id) ? 'Upplåst' : 'Låst' }}</small>
+      <div id="medals-list" class="medals-card__groups">
+        <!-- UNLOCKED / LOCKED -->
+        <section v-for="group in groups" :key="group.id" class="medals-card__group" :aria-labelledby="`medals-${group.id}`">
+          <h4 :id="`medals-${group.id}`">{{ group.title }}</h4>
 
-          <!-- TOOLTIP -->
-          <span :id="`medal-tip-${medal.id}`" class="medal__tooltip" role="tooltip">
-            {{ medal.requirement }}
-          </span>
-        </li>
-      </ul>
+          <ul class="medals-card__grid">
+            <li
+              v-for="medal in group.medals"
+              :key="medal.id"
+              class="medal"
+              :class="{ 'medal--locked': !isUnlocked(medal.id) }"
+              tabindex="0"
+              :aria-describedby="`medal-tip-${medal.id}`"
+              @mouseenter="placeTooltip"
+              @focus="placeTooltip"
+            >
+              <div class="medal__badge">
+                <img class="medal__image" :src="medalImage(medal.id)" alt="" />
+                <span v-if="!isUnlocked(medal.id)" class="medal__lock" aria-hidden="true">🔒</span>
+              </div>
+              <strong class="medal__name">{{ medal.name }}</strong>
+              <small class="medal__status">{{ isUnlocked(medal.id) ? 'Upplåst' : 'Låst' }}</small>
+
+              <!-- TOOLTIP -->
+              <span :id="`medal-tip-${medal.id}`" class="medal__tooltip" role="tooltip">
+                {{ medal.requirement }}
+              </span>
+            </li>
+          </ul>
+        </section>
+      </div>
     </div>
   </section>
 </template>
@@ -217,7 +232,7 @@ function placeTooltip(event) {
   transition: grid-template-rows 0.3s ease;
 
   /* Hides the medals while closed */
-  > .medals-card__grid {
+  > .medals-card__groups {
     min-height: 0;
     overflow: hidden;
   }
@@ -232,7 +247,7 @@ function placeTooltip(event) {
     grid-template-rows: 1fr;
 
     /* Tooltips may go outside the list, but only once it is fully open */
-    > .medals-card__grid {
+    > .medals-card__groups {
       padding-top: 22px;
       animation: show-overflow 0s 0.3s forwards;
     }
@@ -245,6 +260,20 @@ function placeTooltip(event) {
   }
 }
 
+.medals-card__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: padding-top 0.3s ease;
+}
+
+.medals-card__group h4 {
+  margin: 0 0 12px;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 800;
+}
+
 .medals-card__grid {
   margin: 0;
   padding: 0;
@@ -252,7 +281,6 @@ function placeTooltip(event) {
   grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
   gap: 12px;
   list-style: none;
-  transition: padding-top 0.3s ease;
 }
 
 /* MEDAL */
