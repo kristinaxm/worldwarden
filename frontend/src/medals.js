@@ -19,9 +19,12 @@ const TIERS = [
 
 const COMPLETED_COUNTS = [10, 20, 30, 50]
 
+// difficulty and tier (0 = bronze, 2 = gold) are used to show only the best new medal per level
 const levelMedals = Object.entries(LEVEL_NAMES).flatMap(([difficulty, levelName]) =>
-  TIERS.map((tier) => ({
+  TIERS.map((tier, tierIndex) => ({
     id: `quiz-${difficulty}-${tier.id}`,
+    difficulty,
+    tier: tierIndex,
     name: `${levelName} ${tier.name}`,
     requirement: `Få ${tier.score} på ett quiz på ${levelName}.`,
   })),

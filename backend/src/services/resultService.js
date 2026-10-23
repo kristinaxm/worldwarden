@@ -4,6 +4,7 @@ const { httpError } = require('../httpError.js')
 const { LEVELS } = require('../quizLevels.js')
 const { calculateXp, levelForXp, xpSummary } = require('../xpLevels.js')
 const xpService = require('./xpService.js')
+const medalService = require('./medalService.js')
 
 const normalize = (value) => value?.trim().toLocaleLowerCase('sv-SE') ?? ''
 
@@ -113,6 +114,7 @@ async function gradeGuestAnswers(difficulty, answers) {
     newHighscore: false,
     previousBest: null,
     xp: null, // guests don't collect XP
+    newMedals: [], // nor medals
     answers: gradedAnswers,
   }
 }
@@ -157,6 +159,7 @@ async function saveResult(userId, attemptId, difficulty, answers) {
     // Must be read before this quiz is marked as finished, otherwise it compares with itself
     const previousBest = await findBest(connection, userId, difficulty)
     const xpBefore = await xpService.getTotalXp(connection, userId)
+    const medalsBefore = await medalService.getUnlockedIds(connection, userId)
 
     for (const answer of gradedAnswers) {
   await connection.execute(
@@ -181,6 +184,10 @@ async function saveResult(userId, attemptId, difficulty, answers) {
       [attemptId],
     )
 
+    // Medals this quiz unlocked. The connection already sees the quiz as finished.
+    const medalsAfter = await medalService.getUnlockedIds(connection, userId)
+    const newMedals = medalsAfter.filter((id) => !medalsBefore.includes(id))
+
     await connection.commit()
 
     return {
@@ -196,6 +203,7 @@ async function saveResult(userId, attemptId, difficulty, answers) {
         ...xpSummary(xpBefore + xpEarned),
         leveledUp: levelForXp(xpBefore + xpEarned).level > levelForXp(xpBefore).level,
       },
+      newMedals,
       answers: gradedAnswers,
     }
   } catch (err) {

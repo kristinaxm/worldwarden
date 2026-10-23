@@ -3,12 +3,14 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useXp } from '@/composables/useXp'
+import { useMedals } from '@/composables/useMedals'
 import { request } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
 const { user, pending: authPending } = useAuth()
 const { setXp, loadXp } = useXp()
+const { announceMedals } = useMedals()
 
 // XP from the submitted quiz, shown on the result screen. null for guests and mock levels.
 // { earned, totalXp, level, leveledUp, ... } – see POST /api/results in the backend README
@@ -916,6 +918,7 @@ async function finishQuiz() {
       // Updates the XP card and the locks on the home page too
       xpResult.value = result.xp
       setXp(result.xp)
+      announceMedals(result.newMedals)
     } else if (result.id) {
       // Already submitted (409) – the history only has the XP for this quiz
       xpResult.value = { earned: result.xpEarned, leveledUp: false }

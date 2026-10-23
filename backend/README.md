@@ -126,6 +126,8 @@ Response:
 
 Logged in users also get `xp` in the response (see [XP and levels](#xp-and-levels)). Guests get `"xp": null`. Every graded answer has `usedHint`.
 
+`newMedals` lists the medals this quiz unlocked, for example `["quiz-beginner-bronze", "quiz-beginner-silver", "quiz-beginner-gold"]` for 10/10 on the first try (see [Medals](#medals)). It is empty when nothing new was unlocked, and always empty for guests.
+
 Errors: `400` for an unknown difficulty, an invalid `attemptId`, an unknown flag code, or anything other than 10 answers numbered 1–10. `403` if the difficulty is locked. `404` if the quiz doesn't exist or belongs to another user, and `409` if it has already been submitted.
 
 ### Stats
@@ -159,6 +161,7 @@ XP is only calculated by the server, when a logged in user's quiz is submitted. 
 | Method | Path | Who | Success |
 | --- | --- | --- | --- |
 | GET | `/api/profile/xp` | Logged in | `200` with total XP, level and unlocked difficulties |
+| GET | `/api/profile/medals` | Logged in | `200` with the ids of the unlocked medals |
 | POST | `/api/questions/hint` | Logged in | `200` with the hint for one question |
 
 `GET /api/profile/xp` (the `xp` object in `POST /api/results` has the same fields, plus `earned` and `leveledUp`):
@@ -180,6 +183,27 @@ XP is only calculated by the server, when a logged in user's quiz is submitted. 
 `POST /api/questions/hint` with `{ "attemptId": 42, "number": 3 }` returns `{ "number": 3, "hint": "Europa" }` and marks the question in `quiz_answers.used_hint`. A correct answer to that question then gives half XP. The client never sends whether a hint was used, so it can't be cheated.
 
 A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizLevels.js`. The hint must not be sent with the questions, otherwise it can be read without being counted. Errors: `400` if the level has no hints or the input is invalid, `401` for guests, `404` if the quiz doesn't exist or belongs to another user, and `409` if it is already finished.
+
+### Medals
+
+`GET /api/profile/medals` (logged in, `401` for guests) returns the ids of the unlocked medals:
+
+```json
+{ "unlocked": ["quiz-beginner-bronze", "quiz-beginner-silver", "quiz-beginner-gold", "quiz-completed-10"] }
+```
+
+| Medal | Requirement |
+| --- | --- |
+| `quiz-<difficulty>-bronze` | At least 6 correct on that difficulty |
+| `quiz-<difficulty>-silver` | At least 8 correct |
+| `quiz-<difficulty>-gold` | 10/10 correct |
+| `quiz-completed-10/20/30/50` | That many finished quizzes in total |
+| `quiz-worldwarden` | All 12 level medals |
+| `quiz-4perfect` | 10/10 at least once on all four difficulties |
+
+- A higher score also unlocks the lower tiers, so 10/10 gives bronze, silver and gold at once.
+- Like XP, medals are never stored. They are calculated from the finished quizzes in `quiz_attempts`, so quizzes played before medals existed count too.
+- The rules live in `src/medals.js`. The ids must match `frontend/src/medals.js`, which also holds the names, requirement texts and images.
 
 ## Storage and sessions
 
