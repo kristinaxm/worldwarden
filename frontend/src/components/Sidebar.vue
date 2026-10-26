@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
-import{ avatars } from '@/composables/useProfile'
+import { avatars } from '@/composables/useProfile'
 
 defineProps({
   collapsed: {
@@ -31,101 +31,97 @@ const displayName = computed(() => {
 
       <!-- USER + COLLAPSE BUTTON -->
       <div class="sidebar__header">
-        <RouterLink
-          v-if="user"
-          :to="{ name: 'profile' }"
-          class="sidebar__user sidebar__user--button"
-          :title="`Min profil (${user.email})`"
-          aria-label="Öppna min profil"
+      <button
+        class="sidebar_toggle" 
+        type="button" 
+        :title="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'"
+        :aria-label="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'" @click="emit('toggle')"
+        >
+          {{ collapsed ? '»' : '«' }}
+        </button>
+
+        <RouterLink 
+        v-if="user" 
+        :to="{ name: 'profile' }" 
+        class="sidebar__user sidebar__user--button"
+        :title="`Min profil (${user.email})`" 
+        aria-label="Öppna min profil"
         >
           <div class="sidebar__avatar">
-          <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
-          <span v-else>👤</span>
+            <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
+            <span v-else>👤</span>
           </div>
           <span class="sidebar__user-name">{{ displayName }}</span>
         </RouterLink>
-        <RouterLink
-          v-if="user"
-          :to="{ name: 'settings' }"
-          class="sidebar__settings"
-          title="Kontoinställningar"
-          aria-label="Kontoinställningar"
+
+        <RouterLink 
+        v-if="user" 
+        :to="{ name: 'settings' }" 
+        class="sidebar__settings" 
+        title="Kontoinställningar"
+        aria-label="Kontoinställningar"
         >⚙</RouterLink>
+
         <div v-else class="sidebar__user">
           <div class="sidebar__avatar">👤</div>
           <span class="sidebar__user-name">Gäst</span>
         </div>
+        </div>
 
-        <button class="sidebar__toggle" type="button" :aria-label="collapsed ? 'Öppna sidomeny' : 'Stäng sidomeny'" @click="emit('toggle')">
-          {{ collapsed ? '›' : '‹' }}
-        </button>
+        <!-- NAVIGATION -->
+        <nav class="sidebar__navigation">
+
+          <RouterLink to="/" class="sidebar__link" title="Huvudmeny" active-class=""
+            exact-active-class="router-link-active">
+            <span class="sidebar__icon">▦</span>
+            <span class="sidebar__text">Huvudmeny</span>
+          </RouterLink>
+
+          <RouterLink :to="{ name: 'results' }" class="sidebar__link" title="Mina resultat">
+            <span class="sidebar__icon">☆</span>
+            <span class="sidebar__text">Mina resultat</span>
+          </RouterLink>
+
+          <a href="#" class="sidebar__link" title="Topplistor">
+            <span class="sidebar__icon">♜</span>
+            <span class="sidebar__text">Topplistor</span>
+          </a>
+
+          <a href="#" class="sidebar__link" title="Kategorier">
+            <span class="sidebar__icon">◉</span>
+            <span class="sidebar__text">Kategorier</span>
+          </a>
+
+          <a href="#" class="sidebar__link" title="Community">
+            <span class="sidebar__icon">♧</span>
+            <span class="sidebar__text">Community</span>
+          </a>
+        </nav>
+
+        <!-- DIVIDER -->
+        <div class="sidebar__divider"></div>
+
+        <!-- AUTH -->
+        <div class="sidebar__auth">
+          <button class="sidebar__button sidebar__button--outline" type="button" :title="user ? 'Logga ut' : 'Logga in'"
+            :aria-label="user ? 'Logga ut' : 'Logga in'" :disabled="pending"
+            @click="user ? logout() : emit('auth', 'login')">
+            <span class="sidebar__button-icon">🔑</span>
+            <span class="sidebar__button-text">{{ user ? 'Logga ut' : 'Logga in' }}</span>
+          </button>
+
+          <button v-if="!user" class="sidebar__button sidebar__button--filled" type="button" title="Skapa konto"
+            aria-label="Skapa konto" :disabled="pending" @click="emit('auth', 'signup')">
+            <span class="sidebar__button-icon">👤</span>
+            <span class="sidebar__button-text">Skapa konto</span>
+          </button>
+        </div>
       </div>
 
-      <!-- NAVIGATION -->
-      <nav class="sidebar__navigation">
-
-        <RouterLink to="/" class="sidebar__link" title="Huvudmeny" active-class="" exact-active-class="router-link-active">
-          <span class="sidebar__icon">▦</span>
-          <span class="sidebar__text">Huvudmeny</span>
-        </RouterLink>
-
-        <RouterLink :to="{ name: 'results' }" class="sidebar__link" title="Mina resultat">
-          <span class="sidebar__icon">☆</span>
-          <span class="sidebar__text">Mina resultat</span>
-        </RouterLink>
-
-        <a href="#" class="sidebar__link" title="Topplistor">
-          <span class="sidebar__icon">♜</span>
-          <span class="sidebar__text">Topplistor</span>
-        </a>
-
-        <a href="#" class="sidebar__link" title="Kategorier">
-          <span class="sidebar__icon">◉</span>
-          <span class="sidebar__text">Kategorier</span>
-        </a>
-
-        <a href="#" class="sidebar__link" title="Community">
-          <span class="sidebar__icon">♧</span>
-          <span class="sidebar__text">Community</span>
-        </a>
-      </nav>
-
-      <!-- DIVIDER -->
-      <div class="sidebar__divider"></div>
-
-      <!-- AUTH -->
-      <div class="sidebar__auth">
-        <button
-          class="sidebar__button sidebar__button--outline"
-          type="button"
-          :title="user ? 'Logga ut' : 'Logga in'"
-          :aria-label="user ? 'Logga ut' : 'Logga in'"
-          :disabled="pending"
-          @click="user ? logout() : emit('auth', 'login')"
-        >
-          <span class="sidebar__button-icon">🔑</span>
-          <span class="sidebar__button-text">{{ user ? 'Logga ut' : 'Logga in' }}</span>
-        </button>
-
-        <button
-          v-if="!user"
-          class="sidebar__button sidebar__button--filled"
-          type="button"
-          title="Skapa konto"
-          aria-label="Skapa konto"
-          :disabled="pending"
-          @click="emit('auth', 'signup')"
-        >
-          <span class="sidebar__button-icon">👤</span>
-          <span class="sidebar__button-text">Skapa konto</span>
-        </button>
+      <!-- FOOTER -->
+      <div class="sidebar__bottom">
+        <slot name="footer"/>
       </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="sidebar__bottom">
-      <slot name="footer" />
-    </div>
   </aside>
 </template>
 
@@ -389,6 +385,13 @@ const displayName = computed(() => {
       justify-content: center;
       gap: 10px;
 
+      .sidebar__toggle {
+        order: -1;
+        width: 36px;
+        height: 36px;
+        margin-bottom: 4px;
+      }
+
       .sidebar__user {
         justify-content: center;
 
@@ -409,9 +412,6 @@ const displayName = computed(() => {
         margin-left: 0;
       }
 
-      .sidebar__toggle {
-        width: 36px;
-      }
     }
 
     .sidebar__navigation {
