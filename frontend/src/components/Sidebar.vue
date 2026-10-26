@@ -153,7 +153,7 @@ const displayName = computed(() => {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 14px;
 
       /* USER */
@@ -168,6 +168,7 @@ const displayName = computed(() => {
         .sidebar__avatar {
           width: 32px;
           height: 32px;
+          font-size: 16px;
           display: grid;
           place-items: center;
           flex-shrink: 0;
@@ -184,10 +185,11 @@ const displayName = computed(() => {
       }
 
       .sidebar__user--button {
-        margin: -4px;
-        padding: 4px 10px 4px 4px;
+        margin: 0px;
+        padding: 0;
         border: 0;
-        border-radius: 999px;
+        display: flex;
+        justify-content: center;
         background: transparent;
         color: var(--color-text);
         cursor: pointer;
@@ -213,8 +215,8 @@ const displayName = computed(() => {
 
       /* SETTINGS BUTTON */
       .sidebar__settings {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         margin-left: auto;
         display: grid;
         place-items: center;
@@ -385,6 +387,7 @@ const displayName = computed(() => {
     .sidebar__header {
       flex-direction: column;
       justify-content: center;
+      gap: 10px;
 
       .sidebar__user {
         justify-content: center;
@@ -392,6 +395,14 @@ const displayName = computed(() => {
         .sidebar__user-name {
           display: none;
         }
+      }
+
+      .sidebar__user--button {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 50%;
       }
 
       .sidebar__settings {
