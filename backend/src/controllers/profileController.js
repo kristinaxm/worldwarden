@@ -7,16 +7,32 @@ const profileService = require('../services/profileService.js')
 const { sessionCookie, cookieOptions } = require('../sessions.js')
 const { pool } = require('../db.js')
 
-// Uppdatera visningsnamn + avatar (kräver inloggning, inget lösenord)
+// Uppdatera visningsnamn och/eller avatar (kräver inloggning, inget lösenord)
+// Bara fälten som skickas med ändras, de andra ligger kvar
 async function updateProfile(req, res) {
     const userId = req.user.id
 
-    const { displayName, avatar } = req.body
-    if (displayName && displayName.length > 50) {
+    const { displayName, avatar } = req.body || {}
+    const isTextOrNull = (value) => value === null || typeof value === 'string'
+
+    if (displayName === undefined && avatar === undefined) {
+        return res.status(400).json({ error: 'Skicka med displayName och/eller avatar!' })
+    }
+    if (displayName !== undefined && !isTextOrNull(displayName)) {
+        return res.status(400).json({ error: 'Visningsnamn måste vara text!' })
+    }
+    if (displayName && [...displayName].length > 50) {
         return res.status(400).json({ error: 'Visningsnamn får inte vara längre än 50 tecken!' })
     }
+    if (avatar !== undefined && !isTextOrNull(avatar)) {
+        return res.status(400).json({ error: 'Avatar måste vara text!' })
+    }
 
-    const user = await profileService.updateProfile(userId, displayName || null, avatar || null)
+    const changes = {}
+    if (displayName !== undefined) changes.display_name = displayName || null
+    if (avatar !== undefined) changes.avatar = avatar || null
+
+    const user = await profileService.updateProfile(userId, changes)
     res.json({ user })
 }
 // Byt e-post (kräver lösenordsverifiering)
@@ -66,8 +82,10 @@ async function updatePassword(req, res) {
     if (typeof newPassword !== 'string' || !newPassword.length) {
         return res.status(400).json({ error: 'Nytt lösenord krävs!' })
     }
-    if (newPassword.length < 5) {
-        return res.status(400).json({ error: 'Nytt lösenord måste vara minst 5 tecken långt!' })
+    // Samma regler som vid registrering (authController.signup): 5–128 tecken
+    const length = [...newPassword].length
+    if (length < 5 || length > 128) {
+        return res.status(400).json({ error: 'Nytt lösenord måste vara 5–128 tecken långt!' })
     }
     const hasNumber = /[0-9]/.test(newPassword)
     const hasSymbol = /[\p{P}\p{S}]/u.test(newPassword)

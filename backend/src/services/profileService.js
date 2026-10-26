@@ -7,10 +7,13 @@ async function getById(userId) {
     return rows[0] || null
 }
 
-async function updateProfile(userId, displayName, avatar) {
+// changes: { display_name?, avatar? } – bara kolumnerna som finns med uppdateras.
+// Kolumnnamnen kommer från controllern, aldrig från klienten.
+async function updateProfile(userId, changes) {
+    const columns = Object.keys(changes)
     await pool.execute(
-        'UPDATE users SET display_name = ?, avatar = ? WHERE id = ?',
-        [displayName, avatar, userId]
+        `UPDATE users SET ${columns.map((column) => `${column} = ?`).join(', ')} WHERE id = ?`,
+        [...columns.map((column) => changes[column]), userId]
     )
     return getById(userId);
 }
