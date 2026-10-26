@@ -1,6 +1,8 @@
 <script setup>
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import{ avatars } from '@/composables/useProfile'
 
 defineProps({
   collapsed: {
@@ -11,7 +13,16 @@ defineProps({
 
 const emit = defineEmits(['toggle', 'auth'])
 defineOptions({ name: 'AppSidebar' })
+
 const { user, pending, logout } = useAuth()
+
+const userAvatar = computed(() => {
+  return avatars.find((a) => a.id === user.value?.avatar) ?? null
+})
+
+const displayName = computed(() => {
+  return user.value?.display_name || user.value?.email?.split('@')[0] || ''
+})
 </script>
 
 <template>
@@ -27,8 +38,11 @@ const { user, pending, logout } = useAuth()
           :title="`Min profil (${user.email})`"
           aria-label="Öppna min profil"
         >
-          <div class="sidebar__avatar">👤</div>
-          <span class="sidebar__user-name">{{ user.email }}</span>
+          <div class="sidebar__avatar">
+          <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
+          <span v-else>👤</span>
+          </div>
+          <span class="sidebar__user-name">{{ displayName }}</span>
         </RouterLink>
         <RouterLink
           v-if="user"
@@ -159,6 +173,7 @@ const { user, pending, logout } = useAuth()
           flex-shrink: 0;
           background: #edf1f2;
           border-radius: 50%;
+          overflow: hidden;
         }
 
         .sidebar__user-name {

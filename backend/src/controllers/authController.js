@@ -44,7 +44,12 @@ function credentials(req, res, next) {
             }
 
             await createSession(req, res, user.id)
-            res.json({ user: { id: user.id, email: user.email } })
+            res.json({ user: { 
+                id: user.id, 
+                email: user.email,
+                display_name: user.display_name,
+                avatar: user.avatar, }, 
+            })
         }
 
         function me (req, res) {

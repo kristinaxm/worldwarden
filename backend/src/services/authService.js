@@ -16,7 +16,7 @@ async function createUser(email, password) {
 
 async function getUserByEmail(email) {
   const [users] = await pool.execute(
-    'SELECT id, email, password_hash FROM users WHERE email = ?',
+    'SELECT id, email, password_hash, display_name, avatar FROM users WHERE email = ?',
     [email],
   )
   return users[0] || null
