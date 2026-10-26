@@ -205,6 +205,38 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
 - Like XP, medals are never stored. They are calculated from the finished quizzes in `quiz_attempts`, so quizzes played before medals existed count too.
 - The rules live in `src/medals.js`. The ids must match `frontend/src/medals.js`, which also holds the names, requirement texts and images.
 
+## Leaderboards
+
+| Method | Path | Access | Result |
+| --- | --- | --- | --- |
+| GET | `/api/leaderboard/xp?page=1` | Everyone | `200` with players sorted by total XP |
+| GET | `/api/leaderboard/:difficulty?page=1` | Everyone | `200` with each player's best quiz on `beginner`, `medium`, `advanced` or `expert` |
+| GET | `/api/leaderboard/players/:id/medals` | Everyone | `200` with `{ "unlocked": [...] }`, the medal ids of a player on the leaderboards |
+
+`page` is optional (default `1`) and each page has 20 players. A difficulty board looks like this, the XP board has `totalXp`, `level` and `quizCount` instead of `score`, `total`, `durationSeconds` and `completedAt`:
+
+```json
+{
+  "board": "beginner",
+  "page": 1,
+  "pageSize": 20,
+  "totalPlayers": 27,
+  "totalPages": 2,
+  "entries": [
+    { "id": 3, "place": 1, "name": "Adam", "avatar": "panda", "isMe": false, "score": 10, "total": 10, "durationSeconds": 85, "completedAt": "..." }
+  ],
+  "me": { "id": 8, "place": 14, "name": "Emma", "avatar": null, "isMe": true, "score": 7, "total": 10, "durationSeconds": 60, "completedAt": "...", "page": 1 }
+}
+```
+
+- Only finished quizzes count, and every player is shown once per board with their best result.
+- XP board: most XP first. Difficulty boards: most correct first, then the fastest time.
+- Players with the same result share a `place` (1, 2, 2, 4). Same score and time: the one who got it first is shown above.
+- `name` is the display name, or `Spelare #<id>` if the player hasn't chosen one. The email is never sent, since guests can see the leaderboards too.
+- `me` is the logged-in player's own row and the `page` it is on. It is `null` for guests and for players who haven't played that board.
+- Errors: `404` for an unknown board, `400` for an invalid page.
+- A player's medals use the `id` from the leaderboard and are calculated like `GET /api/profile/medals`. Only players with a finished quiz (everyone on the leaderboards) can be looked up, others give `404`, so the endpoint can't be used to find out which user ids exist. `400` for an invalid id.
+
 ## Storage and sessions
 
 Passwords use Argon2id with a random salt, 19 MiB memory, two iterations and parallelism one. Password hashes never appear in API responses.
