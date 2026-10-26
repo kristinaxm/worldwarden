@@ -1,6 +1,8 @@
 <script setup>
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { avatars } from '@/composables/useProfile'
 
 defineProps({
   collapsed: {
@@ -11,7 +13,16 @@ defineProps({
 
 const emit = defineEmits(['toggle', 'auth'])
 defineOptions({ name: 'AppSidebar' })
+
 const { user, pending, logout } = useAuth()
+
+const userAvatar = computed(() => {
+  return avatars.find((a) => a.id === user.value?.avatar) ?? null
+})
+
+const displayName = computed(() => {
+  return user.value?.display_name || user.value?.email?.split('@')[0] || ''
+})
 </script>
 
 <template>
@@ -20,98 +31,97 @@ const { user, pending, logout } = useAuth()
 
       <!-- USER + COLLAPSE BUTTON -->
       <div class="sidebar__header">
-        <RouterLink
-          v-if="user"
-          :to="{ name: 'profile' }"
-          class="sidebar__user sidebar__user--button"
-          :title="`Min profil (${user.email})`"
-          aria-label="Öppna min profil"
+      <button
+        class="sidebar_toggle" 
+        type="button" 
+        :title="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'"
+        :aria-label="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'" @click="emit('toggle')"
         >
-          <div class="sidebar__avatar">👤</div>
-          <span class="sidebar__user-name">{{ user.email }}</span>
+          {{ collapsed ? '»' : '«' }}
+        </button>
+
+        <RouterLink 
+        v-if="user" 
+        :to="{ name: 'profile' }" 
+        class="sidebar__user sidebar__user--button"
+        :title="`Min profil (${user.email})`" 
+        aria-label="Öppna min profil"
+        >
+          <div class="sidebar__avatar">
+            <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
+            <span v-else>👤</span>
+          </div>
+          <span class="sidebar__user-name">{{ displayName }}</span>
         </RouterLink>
-        <RouterLink
-          v-if="user"
-          :to="{ name: 'settings' }"
-          class="sidebar__settings"
-          title="Kontoinställningar"
-          aria-label="Kontoinställningar"
+
+        <RouterLink 
+        v-if="user" 
+        :to="{ name: 'settings' }" 
+        class="sidebar__settings" 
+        title="Kontoinställningar"
+        aria-label="Kontoinställningar"
         >⚙</RouterLink>
+
         <div v-else class="sidebar__user">
           <div class="sidebar__avatar">👤</div>
           <span class="sidebar__user-name">Gäst</span>
         </div>
+        </div>
 
-        <button class="sidebar__toggle" type="button" :aria-label="collapsed ? 'Öppna sidomeny' : 'Stäng sidomeny'" @click="emit('toggle')">
-          {{ collapsed ? '›' : '‹' }}
-        </button>
+        <!-- NAVIGATION -->
+        <nav class="sidebar__navigation">
+
+          <RouterLink to="/" class="sidebar__link" title="Huvudmeny" active-class=""
+            exact-active-class="router-link-active">
+            <span class="sidebar__icon">▦</span>
+            <span class="sidebar__text">Huvudmeny</span>
+          </RouterLink>
+
+          <RouterLink :to="{ name: 'results' }" class="sidebar__link" title="Mina resultat">
+            <span class="sidebar__icon">☆</span>
+            <span class="sidebar__text">Mina resultat</span>
+          </RouterLink>
+
+          <a href="#" class="sidebar__link" title="Topplistor">
+            <span class="sidebar__icon">♜</span>
+            <span class="sidebar__text">Topplistor</span>
+          </a>
+
+          <a href="#" class="sidebar__link" title="Kategorier">
+            <span class="sidebar__icon">◉</span>
+            <span class="sidebar__text">Kategorier</span>
+          </a>
+
+          <a href="#" class="sidebar__link" title="Community">
+            <span class="sidebar__icon">♧</span>
+            <span class="sidebar__text">Community</span>
+          </a>
+        </nav>
+
+        <!-- DIVIDER -->
+        <div class="sidebar__divider"></div>
+
+        <!-- AUTH -->
+        <div class="sidebar__auth">
+          <button class="sidebar__button sidebar__button--outline" type="button" :title="user ? 'Logga ut' : 'Logga in'"
+            :aria-label="user ? 'Logga ut' : 'Logga in'" :disabled="pending"
+            @click="user ? logout() : emit('auth', 'login')">
+            <span class="sidebar__button-icon">🔑</span>
+            <span class="sidebar__button-text">{{ user ? 'Logga ut' : 'Logga in' }}</span>
+          </button>
+
+          <button v-if="!user" class="sidebar__button sidebar__button--filled" type="button" title="Skapa konto"
+            aria-label="Skapa konto" :disabled="pending" @click="emit('auth', 'signup')">
+            <span class="sidebar__button-icon">👤</span>
+            <span class="sidebar__button-text">Skapa konto</span>
+          </button>
+        </div>
       </div>
 
-      <!-- NAVIGATION -->
-      <nav class="sidebar__navigation">
-
-        <RouterLink to="/" class="sidebar__link" title="Huvudmeny" active-class="" exact-active-class="router-link-active">
-          <span class="sidebar__icon">▦</span>
-          <span class="sidebar__text">Huvudmeny</span>
-        </RouterLink>
-
-        <RouterLink :to="{ name: 'results' }" class="sidebar__link" title="Mina resultat">
-          <span class="sidebar__icon">☆</span>
-          <span class="sidebar__text">Mina resultat</span>
-        </RouterLink>
-
-        <a href="#" class="sidebar__link" title="Topplistor">
-          <span class="sidebar__icon">♜</span>
-          <span class="sidebar__text">Topplistor</span>
-        </a>
-
-        <a href="#" class="sidebar__link" title="Kategorier">
-          <span class="sidebar__icon">◉</span>
-          <span class="sidebar__text">Kategorier</span>
-        </a>
-
-        <a href="#" class="sidebar__link" title="Community">
-          <span class="sidebar__icon">♧</span>
-          <span class="sidebar__text">Community</span>
-        </a>
-      </nav>
-
-      <!-- DIVIDER -->
-      <div class="sidebar__divider"></div>
-
-      <!-- AUTH -->
-      <div class="sidebar__auth">
-        <button
-          class="sidebar__button sidebar__button--outline"
-          type="button"
-          :title="user ? 'Logga ut' : 'Logga in'"
-          :aria-label="user ? 'Logga ut' : 'Logga in'"
-          :disabled="pending"
-          @click="user ? logout() : emit('auth', 'login')"
-        >
-          <span class="sidebar__button-icon">🔑</span>
-          <span class="sidebar__button-text">{{ user ? 'Logga ut' : 'Logga in' }}</span>
-        </button>
-
-        <button
-          v-if="!user"
-          class="sidebar__button sidebar__button--filled"
-          type="button"
-          title="Skapa konto"
-          aria-label="Skapa konto"
-          :disabled="pending"
-          @click="emit('auth', 'signup')"
-        >
-          <span class="sidebar__button-icon">👤</span>
-          <span class="sidebar__button-text">Skapa konto</span>
-        </button>
+      <!-- FOOTER -->
+      <div class="sidebar__bottom">
+        <slot name="footer"/>
       </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="sidebar__bottom">
-      <slot name="footer" />
-    </div>
   </aside>
 </template>
 
@@ -139,7 +149,7 @@ const { user, pending, logout } = useAuth()
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 14px;
 
       /* USER */
@@ -154,11 +164,13 @@ const { user, pending, logout } = useAuth()
         .sidebar__avatar {
           width: 32px;
           height: 32px;
+          font-size: 16px;
           display: grid;
           place-items: center;
           flex-shrink: 0;
           background: #edf1f2;
           border-radius: 50%;
+          overflow: hidden;
         }
 
         .sidebar__user-name {
@@ -169,10 +181,11 @@ const { user, pending, logout } = useAuth()
       }
 
       .sidebar__user--button {
-        margin: -4px;
-        padding: 4px 10px 4px 4px;
+        margin: 0px;
+        padding: 0;
         border: 0;
-        border-radius: 999px;
+        display: flex;
+        justify-content: center;
         background: transparent;
         color: var(--color-text);
         cursor: pointer;
@@ -198,8 +211,8 @@ const { user, pending, logout } = useAuth()
 
       /* SETTINGS BUTTON */
       .sidebar__settings {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         margin-left: auto;
         display: grid;
         place-items: center;
@@ -370,6 +383,14 @@ const { user, pending, logout } = useAuth()
     .sidebar__header {
       flex-direction: column;
       justify-content: center;
+      gap: 10px;
+
+      .sidebar__toggle {
+        order: -1;
+        width: 36px;
+        height: 36px;
+        margin-bottom: 4px;
+      }
 
       .sidebar__user {
         justify-content: center;
@@ -379,13 +400,18 @@ const { user, pending, logout } = useAuth()
         }
       }
 
+      .sidebar__user--button {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 50%;
+      }
+
       .sidebar__settings {
         margin-left: 0;
       }
 
-      .sidebar__toggle {
-        width: 36px;
-      }
     }
 
     .sidebar__navigation {

@@ -2,16 +2,40 @@
 import heroImage from '@/assets/images/headerhero/heroImage.png'
 import logoImage from '@/assets/images/worldwarden-logo.png'
 import { useAuth } from '@/composables/useAuth'
+import { nextTick } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const emit = defineEmits(['auth'])
 defineOptions({ name: 'AppHeader' })
 const { user, pending, logout } = useAuth()
+const route = useRoute()
+const router = useRouter()
 
 // Scrolls down to the quiz section on the home page (id="quizzes" in HomeView)
 // and briefly highlights it. If main already shows the section there is nothing
 // to scroll, so the highlight makes sure the button always gives visible feedback.
 function scrollToQuizzes() {
+  if (route.path !== '/') {
+    router.push('/')
+    nextTick(() => {
+      setTimeout(() => {
+        const section = document.getElementById('quizzes')
+        if (!section) return
+
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      section.classList.remove('quiz-section--highlight')
+      void section.offsetWidth
+      section.classList.add('quiz-section--highlight')
+      section.addEventListener(
+        'animationend',
+        () => section.classList.remove('quiz-section--highlight'),
+        { once: true },
+      )
+      }, 100)
+    })
+    return
+  }
   const section = document.getElementById('quizzes')
   if (!section) return
 
