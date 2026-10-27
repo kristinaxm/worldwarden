@@ -43,6 +43,17 @@ cd backend
 npm run migrate
 ```
 
+### GitHub-inloggning (valfritt)
+
+Inloggning med GitHub behöver en egen OAuth App. Utan nycklar fungerar allt annat som vanligt, men GitHub-knappen svarar `503`.
+
+1. github.com → Settings → Developer settings → OAuth Apps → New OAuth App
+2. Homepage URL: `http://localhost:5173`
+3. Authorization callback URL: `http://localhost:3000/api/auth/github/callback`
+4. Skriv in `GITHUB_CLIENT_ID` och `GITHUB_CLIENT_SECRET` i `backend/.env`
+
+Varje person i gruppen behöver sin egen OAuth App, eftersom nycklarna inte ska delas eller hamna i git.
+
 ## Starta
 
 Tre terminaler, från projektmappen:
