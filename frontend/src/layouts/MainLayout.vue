@@ -82,9 +82,9 @@ function closeMobileMenu() {
             <RouterLink :to="{ name: 'results' }" @click="closeMobileMenu">
               ☆ Mina resultat
             </RouterLink>
-            <a href="#">
+            <RouterLink :to="{ name: 'leaderboard' }" @click="closeMobileMenu">
               ♜ Topplistor
-            </a>
+            </RouterLink>
             <a href="#">
               ◉ Kategorier
             </a>
