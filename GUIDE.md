@@ -45,14 +45,29 @@ npm run migrate
 
 ### GitHub-inloggning (valfritt)
 
-Inloggning med GitHub behöver en egen OAuth App. Utan nycklar fungerar allt annat som vanligt, men GitHub-knappen svarar `503`.
+Inloggning med GitHub behöver en OAuth App på github.com. Har någon i gruppen redan skapat en: hoppa till punkt 4 och be om nycklarna.
 
 1. github.com → Settings → Developer settings → OAuth Apps → New OAuth App
 2. Homepage URL: `http://localhost:5173`
 3. Authorization callback URL: `http://localhost:3000/api/auth/github/callback`
 4. Skriv in `GITHUB_CLIENT_ID` och `GITHUB_CLIENT_SECRET` i `backend/.env`
 
-Varje person i gruppen behöver sin egen OAuth App, eftersom nycklarna inte ska delas eller hamna i git.
+Hela gruppen kan dela på **en** OAuth App. Callback-adressen pekar på `localhost`, alltså varje persons egen dator, så samma app fungerar för alla samtidigt. Be den som skapade appen om `GITHUB_CLIENT_ID` och `GITHUB_CLIENT_SECRET` och klistra in dem i din egen `backend/.env`. Skicka dem aldrig via git eller en publik kanal.
+
+Hoppar du över det här fungerar allt annat som vanligt — bara GitHub-knappen slutar funka, och den säger till att nycklarna saknas.
+
+### Felsökning: GitHub-knappen säger att nycklarna saknas
+
+Nycklarna läses **en gång när backend startar**. Har du precis lagt in dem måste du starta om backend, annars kör den vidare på de gamla tomma värdena.
+
+Räcker inte Ctrl+C? Då kan en gammal backend ligga kvar och hålla port 3000, till exempel från en terminal du stängt. Den syns inte i din nuvarande terminal, så Ctrl+C där stoppar fel process. Hitta och stoppa den på PID:
+
+```powershell
+netstat -ano | findstr ":3000" | findstr LISTENING
+taskkill /F /PID <PID-numret från första kommandot>
+```
+
+Starta sedan `npm run dev` igen. Den nya processen ska skriva `API lyssnar på http://localhost:3000`. Står det `EADDRINUSE` lever den gamla kvar ännu. Se till att bara ha **en** backend-terminal igång.
 
 ## Starta
 

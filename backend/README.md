@@ -37,11 +37,11 @@ Invalid input returns `400`. Invalid credentials and missing or expired sessions
 
 ## GitHub login (OAuth2)
 
-Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `BACKEND_ORIGIN` in `.env` from an OAuth App on github.com, with the callback URL `BACKEND_ORIGIN` + `/api/auth/github/callback`. Without a client id `/api/auth/github` returns `503`, so the rest of the API works unconfigured.
+Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `BACKEND_ORIGIN` in `.env` from an OAuth App on github.com, with the callback URL `BACKEND_ORIGIN` + `/api/auth/github/callback`. One OAuth App serves the whole team, since the callback resolves to each developer's own machine. Without a client id the rest of the API works unconfigured and `/api/auth/github` redirects to `FRONTEND_ORIGIN/?github=saknas`, which the UI shows as a missing-configuration message. The keys are read once at startup, so restart the API after adding them.
 
 `GET /api/auth/github` must be a normal browser navigation, not `fetch`. It stores a random `state` in a short-lived cookie and redirects to GitHub. The callback rejects a missing or mismatched `state`, exchanges the code for a token, and reads the account's id and verified primary email (`read:user user:email`), since the public profile email can be hidden.
 
-GitHub accounts are stored in `users` like every other account, identified by `github_id`. A first GitHub login on an email that already has a password account links the two rows instead of creating a second one, so both ways in reach the same profile, XP and medals. GitHub accounts have an empty `password_hash` and can never be logged into with the password form. The callback ends in `createSession`, the same session as a password login, so every `requireUser` route works unchanged. Failures redirect to `FRONTEND_ORIGIN/?github=fel` instead of showing an API error.
+GitHub accounts are stored in `users` like every other account, identified by `github_id`. A first GitHub login on an email that already has a password account links the two rows instead of creating a second one, so both ways in reach the same profile, XP and medals. GitHub accounts have an empty `password_hash` and can never be logged into with the password form. The callback ends in `createSession`, the same session as a password login, so every `requireUser` route works unchanged. Failures redirect to `FRONTEND_ORIGIN/?github=fel` instead of showing an API error. The link is a page navigation, so errors must redirect rather than return JSON, which would otherwise replace the app with a raw error body.
 
 ## Countries API
 

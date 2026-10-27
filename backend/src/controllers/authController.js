@@ -58,8 +58,10 @@ function credentials(req, res, next) {
 
         // Step 1: send the user to GitHub with a random state we can check on the way back
         function github(req, res) {
+            // Redirect instead of JSON: the link is a page navigation, so an error
+            // body would replace the whole app with raw text
             if (!process.env.GITHUB_CLIENT_ID) {
-                return res.status(503).json({ error: 'GitHub login is not configured' })
+                return res.redirect(`${frontendOrigin}/?github=saknas`)
             }
             const state = randomBytes(16).toString('base64url')
             res.cookie(stateCookie, state, { ...cookieOptions, maxAge: 10 * 60 * 1000 })
