@@ -1,6 +1,10 @@
+const { randomBytes } = require('node:crypto')
 const validator = require('validator')
 const authService = require('../services/authService.js')
 const { cookieOptions, createSession, sessionCookie, sessionHash } = require('../sessions.js')
+
+const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
+const stateCookie = 'github_state'
 
 function credentials(req, res, next) {
     const { email, password } = req.body || {}
@@ -52,6 +56,59 @@ function credentials(req, res, next) {
             })
         }
 
+        // Step 1: send the user to GitHub with a random state we can check on the way back
+        function github(req, res) {
+            if (!process.env.GITHUB_CLIENT_ID) {
+                return res.status(503).json({ error: 'GitHub login is not configured' })
+            }
+            const state = randomBytes(16).toString('base64url')
+            res.cookie(stateCookie, state, { ...cookieOptions, maxAge: 10 * 60 * 1000 })
+            const params = new URLSearchParams({
+                client_id: process.env.GITHUB_CLIENT_ID,
+                redirect_uri: `${process.env.BACKEND_ORIGIN || 'http://localhost:3000'}/api/auth/github/callback`,
+                scope: 'read:user user:email',
+                state,
+            })
+            res.redirect(`https://github.com/login/oauth/authorize?${params}`)
+        }
+
+        // Step 2: trade the code for a token, then log the GitHub user in with a normal session
+        async function githubCallback(req, res) {
+            const { code, state } = req.query
+            const expected = req.cookies[stateCookie]
+            res.clearCookie(stateCookie, cookieOptions)
+            if (typeof code !== 'string' || typeof state !== 'string' || !expected || state !== expected) {
+                return res.redirect(`${frontendOrigin}/?github=fel`)
+            }
+
+            const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({
+                    client_id: process.env.GITHUB_CLIENT_ID,
+                    client_secret: process.env.GITHUB_CLIENT_SECRET,
+                    code,
+                    redirect_uri: `${process.env.BACKEND_ORIGIN || 'http://localhost:3000'}/api/auth/github/callback`,
+                }),
+            })
+            const { access_token: token } = await tokenResponse.json()
+            if (!token) return res.redirect(`${frontendOrigin}/?github=fel`)
+
+            const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+            const profile = await (await fetch('https://api.github.com/user', { headers })).json()
+            // The profile email can be hidden, so fall back to the verified primary one
+            let email = profile.email
+            if (!email) {
+                const emails = await (await fetch('https://api.github.com/user/emails', { headers })).json()
+                email = emails.find?.((item) => item.primary && item.verified)?.email
+            }
+            if (!profile.id || !email) return res.redirect(`${frontendOrigin}/?github=fel`)
+
+            const user = await authService.findOrCreateGithubUser(String(profile.id), email.toLowerCase())
+            await createSession(req, res, user.id)
+            res.redirect(frontendOrigin)
+        }
+
         function me (req, res) {
             res.json({ user: req.user })
         }
@@ -69,6 +126,8 @@ function credentials(req, res, next) {
         credentials,
         signup,
         login,
+        github,
+        githubCallback,
         me,
         logout,
     }
