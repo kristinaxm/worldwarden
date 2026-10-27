@@ -70,7 +70,7 @@ En Quick Tunnel ger en publik HTTPS-länk till appen som körs på din dator. De
 ### Så hänger det ihop
 
 ```
-Klasskamratens mobil
+Klasskamratens dator eller mobil
    │  https://ord-ord-ord.trycloudflare.com
    ▼
 Cloudflare (internet)
