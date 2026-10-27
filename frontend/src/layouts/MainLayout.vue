@@ -5,7 +5,8 @@ import Sidebar from '@/components/Sidebar.vue'
 import Footer from '@/components/Footer.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
 import { useAuth } from '@/composables/useAuth'
-import { nextTick, provide, ref, watch } from 'vue'
+import { computed, nextTick, provide, ref, watch } from 'vue'
+import { avatars } from '@/composables/useProfile'
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
@@ -13,6 +14,13 @@ const authMode = ref(null)
 const content = ref(null)
 const route = useRoute()
 const { user, pending, error, restore, logout } = useAuth()
+const userAvatar = computed(() => {
+  return avatars.find((a) => a.id === user.value?.avatar) ?? null
+})
+
+const displayName = computed(() => {
+  return user.value?.display_name || user.value?.email?.split('@')[0] || ''
+})
 
 // Start each page at the top of the scrollable content area.
 watch(
@@ -95,7 +103,11 @@ function closeMobileMenu() {
           <div class="mobile-menu__divider"></div>
           <div class="mobile-menu__auth">
             <RouterLink v-if="user" :to="{ name: 'profile' }" class="mobile-menu__account" @click="closeMobileMenu">
-              <span>{{ user.email }}<small>Visa profil</small></span>
+              <div class="mobile-menu__avatar">
+              <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
+              <span v-else>👤</span>
+              </div>
+              <span>{{ displayName }}<small>Visa profil</small></span>
             </RouterLink>
             <RouterLink v-if="user" :to="{ name: 'settings' }" class="mobile-menu__account" @click="closeMobileMenu">
               <span>⚙ Kontoinställningar<small>Byt e-post eller lösenord</small></span>
@@ -169,12 +181,31 @@ function closeMobileMenu() {
   font-weight: 700;
   cursor: pointer;
 
+  span {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   small {
     display: block;
     margin-top: 2px;
     color: var(--color-primary);
     font-size: 12px;
   }
+}
+
+.mobile-menu__avatar {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--color-primary-light);
+  border-radius: 50%;
+  font-size: 20px;
 }
 
 
