@@ -49,6 +49,11 @@ async function restore() {
   } finally {
     pending.value = false
   }
+  // Servern skickar hit ?github=fel när GitHub-inloggningen misslyckades
+  if (new URLSearchParams(window.location.search).get('github') === 'fel') {
+    error.value = 'GitHub-inloggningen misslyckades. Försök igen.'
+    window.history.replaceState(null, '', window.location.pathname)
+  }
 }
 
 async function login(credentials) {
