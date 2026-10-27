@@ -60,10 +60,10 @@ const { user, pending, logout } = useAuth()
           <span class="sidebar__text">Mina resultat</span>
         </RouterLink>
 
-        <a href="#" class="sidebar__link" title="Topplistor">
+        <RouterLink :to="{ name: 'leaderboard' }" class="sidebar__link" title="Topplistor">
           <span class="sidebar__icon">♜</span>
           <span class="sidebar__text">Topplistor</span>
-        </a>
+        </RouterLink>
 
         <a href="#" class="sidebar__link" title="Kategorier">
           <span class="sidebar__icon">◉</span>
