@@ -63,6 +63,72 @@ När databasen har startat, kör `npm run migrate` i `backend/` innan backend st
 
 Får du `{"status":"error","db":"unreachable"}` kör inte databasen. Starta Docker Desktop och kör `docker compose up -d`.
 
+## Dela appen med klassen (Cloudflare Quick Tunnel)
+
+En Quick Tunnel ger en publik HTTPS-länk till appen som körs på din dator. Den är gratis och kräver inget konto. Allt körs fortfarande hos dig, och alla som spelar sparas i din lokala databas.
+
+### Så hänger det ihop
+
+```
+Klasskamratens mobil
+   │  https://ord-ord-ord.trycloudflare.com
+   ▼
+Cloudflare (internet)
+   │  tunneln, som cloudflared på din dator har öppnat
+   ▼
+Frontend (Vite)  localhost:5173  ── /api/... ──►  Backend (Express)  localhost:3000  ──►  MySQL i Docker
+```
+
+Tunneln pekar bara på frontend. Frontend skickar alla `/api`-anrop vidare till backend, så hela appen ligger på samma adress och inloggningscookien fungerar som vanligt.
+
+### Första gången: installera cloudflared
+
+```sh
+winget install --id Cloudflare.cloudflared
+```
+
+Finns inte `winget`: ladda ner `cloudflared-windows-amd64.exe` från [github.com/cloudflare/cloudflared/releases](https://github.com/cloudflare/cloudflared/releases/latest), döp om den till `cloudflared.exe` och lägg den i en mapp som finns i PATH (eller skriv hela sökvägen i kommandot nedan).
+
+### Inför varje demo
+
+1. Starta databas, backend och frontend som under [Starta](#starta).
+2. Starta tunneln i en fjärde terminal:
+
+   ```sh
+   cloudflared tunnel --url http://localhost:5173
+   ```
+
+3. Efter några sekunder står adressen i en ruta, till exempel `https://ord-ord-ord.trycloudflare.com`. Skriv in den i `backend/.env`:
+
+   ```sh
+   FRONTEND_ORIGIN=https://ord-ord-ord.trycloudflare.com
+   ```
+
+   Backend startar om av sig själv när `.env` ändras.
+
+4. Öppna länken själv och testa att logga in. Dela den sedan med klassen, gärna som QR-kod.
+
+### När demon är slut
+
+1. `Ctrl+C` i tunnelns terminal. Länken slutar fungera direkt.
+2. Sätt tillbaka `FRONTEND_ORIGIN=http://localhost:5173` i `backend/.env`.
+
+### Att tänka på
+
+- Adressen slumpas fram och byts varje gång tunneln startas. Starta den före demon och låt den vara igång.
+- Datorn, Docker, backend, frontend och tunneln måste vara igång hela tiden.
+- Den som har länken kommer åt appen. Stäng tunneln när den inte behövs.
+- Backend godkänner bara anrop från `FRONTEND_ORIGIN`. Så länge tunneladressen står där får `localhost:5173` fel vid inloggning, så använd tunneladressen själv under demon.
+
+### Felsökning
+
+| Problem | Orsak och lösning |
+|---|---|
+| Länken laddar inte de första sekunderna | Adressen är ny. Vänta 10–20 sekunder och ladda om. |
+| `Blocked request. This host is not allowed` | Frontend startades innan `allowedHosts` fanns i `vite.config.js`. Starta om frontend. |
+| Inloggning ger "Något gick fel" eller `403` | `FRONTEND_ORIGIN` i `backend/.env` är inte exakt tunneladressen (`https://`, inget `/` på slutet). |
+| `502 Bad Gateway` | Frontend körs inte på port 5173. Starta den med `npm run dev` i `frontend/`. |
+
 ## Databasanslutning (IntelliJ)
 
 Database → `+` → Data Source → MySQL

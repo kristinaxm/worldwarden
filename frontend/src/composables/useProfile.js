@@ -44,7 +44,7 @@ export function useProfile() {
   })
 
   async function updateProfile({ name, avatar }) {
-    const res = await fetch('http://localhost:3000/api/profile', {
+    const res = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -59,7 +59,7 @@ export function useProfile() {
 
 
   async function changeEmail({ newEmail, password }) {
-    const res = await fetch('http://localhost:3000/api/profile/email', {
+    const res = await fetch('/api/profile/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -75,7 +75,7 @@ export function useProfile() {
   }
 
   async function changePassword({ currentPassword, newPassword }) {
-    const res = await fetch('http://localhost:3000/api/profile/password', {
+    const res = await fetch('/api/profile/password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -90,7 +90,7 @@ export function useProfile() {
 
 
   async function deleteAccount({ password }) {
-  const res = await fetch('http://localhost:3000/api/profile', {
+  const res = await fetch('/api/profile', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
