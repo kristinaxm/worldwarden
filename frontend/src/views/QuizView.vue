@@ -987,11 +987,9 @@ async function confirmCloseQuiz() {
   showExitModal.value = false
   stopTimer()
 
-  //Radera försöket om quiz ej är klart
   if (attemptId.value && connected.value) {
-    console.log('🔵 Raderar quiz:', attemptId.value)
     try {
-      await request(`/results/${attemptId.value}`, undefined, 'DELETE')
+      await request(`/results/${attemptId.value}`, {}, 'DELETE')
     } catch (err) {
       console.warn('Kunde inte radera quiz!', err)
     }
@@ -1009,15 +1007,6 @@ async function confirmCloseQuiz() {
 onBeforeRouteLeave(async (to) => {
   if (!quizInProgress.value || leaveConfirmed) {
     return true
-  }
-
-  //Radera påbörjat men ej avslutat quiz
-  if (attemptId.value && connected.value) {
-    try {
-      await request(`/results/${attemptId.value}`, undefined, 'DELETE')
-    } catch (err) {
-      console.warn('Kunde inte radera quiz!', err)
-    }
   }
 
   pendingRoute = to

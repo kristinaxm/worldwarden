@@ -1,7 +1,6 @@
 const resultService = require('../services/resultService.js')
 const xpService = require('../services/xpService.js')
 const { LEVELS, QUESTIONS_PER_QUIZ, SUPPORTED_DIFFICULTIES } = require('../quizLevels.js')
-const{ pool } = require('../db.js')
 
 // Exactly one answer per question (number 1–10).
 // answerField is "country" for beginner and "capital" for medium (see quizLevels.js).
@@ -50,19 +49,12 @@ async function submit(req, res) {
 }
 
 async function remove(req, res) {
-  const userId = req.user.id
-  const attemptId = req.params.id
+  const affectedRows = await resultService.deleteAttempt(req.params.id, req.user.id)
 
-  //Deletes the quiz attempt if the quiz is canceld
-const [result] = await pool.query(
-  'DELETE FROM quiz_attempts WHERE id = ? AND user_id = ? AND completed_at IS NULL', 
-  [attemptId, userId]
-) 
-
-if (result.affectedRows === 0) {
-  return res.status(404).json({ error: 'Quizet hittades inte!' })
-}
-res.sendStatus(204)
+  if (affectedRows === 0) {
+    return res.status(404).json({ error: 'Quizet hittades inte!' })
+  }
+  res.sendStatus(204)
 }
 
 // GET /api/results/stats?difficulty=beginner – latest result and highscore (logged in only)
