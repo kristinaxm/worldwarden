@@ -83,11 +83,33 @@ Tunneln pekar bara på frontend. Frontend skickar alla `/api`-anrop vidare till 
 
 ### Första gången: installera cloudflared
 
+Bara den som kör demon behöver `cloudflared`. De som spelar behöver bara länken.
+
+**Windows, med winget:**
+
 ```sh
 winget install --id Cloudflare.cloudflared
 ```
 
-Finns inte `winget`: ladda ner `cloudflared-windows-amd64.exe` från [github.com/cloudflare/cloudflared/releases](https://github.com/cloudflare/cloudflared/releases/latest), döp om den till `cloudflared.exe` och lägg den i en mapp som finns i PATH (eller skriv hela sökvägen i kommandot nedan).
+Stäng terminalen och öppna en ny efteråt, så att kommandot `cloudflared` hittas.
+
+**Windows, utan winget:**
+
+1. Ladda ner `cloudflared-windows-amd64.exe` från [github.com/cloudflare/cloudflared/releases/latest](https://github.com/cloudflare/cloudflared/releases/latest).
+2. Skapa mappen `%LOCALAPPDATA%\cloudflared`, flytta filen dit och döp om den till `cloudflared.exe`.
+3. Starta tunneln med hela sökvägen i PowerShell:
+
+   ```powershell
+   & "$env:LOCALAPPDATA\cloudflared\cloudflared.exe" tunnel --url http://localhost:5173
+   ```
+
+**Mac:**
+
+```sh
+brew install cloudflared
+```
+
+Kontrollera installationen med `cloudflared --version` (eller hela sökvägen ovan).
 
 ### Inför varje demo
 
@@ -119,6 +141,16 @@ Finns inte `winget`: ladda ner `cloudflared-windows-amd64.exe` från [github.com
 - Datorn, Docker, backend, frontend och tunneln måste vara igång hela tiden.
 - Den som har länken kommer åt appen. Stäng tunneln när den inte behövs.
 - Backend godkänner bara anrop från `FRONTEND_ORIGIN`. Så länge tunneladressen står där får `localhost:5173` fel vid inloggning, så använd tunneladressen själv under demon.
+
+### Om någon annan i gruppen kör demon
+
+Demon körs från en dator, och det kan vara vems som helst. Den som kör den behöver:
+
+- `cloudflared` installerat (se ovan)
+- senaste `main` med `npm install` och `npm run migrate` körda
+- sin egen `backend/.env` med tunneladressen som `FRONTEND_ORIGIN`
+
+Alla konton, resultat, XP och medaljer sparas i databasen på den datorn. Konton som skapats hos någon annan finns inte där, så klassen registrerar sig på nytt hos den som kör demon. Testa länken på den datorn innan demon.
 
 ### Felsökning
 
