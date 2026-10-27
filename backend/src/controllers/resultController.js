@@ -48,6 +48,15 @@ async function submit(req, res) {
   res.json(result)
 }
 
+async function remove(req, res) {
+  const affectedRows = await resultService.deleteAttempt(req.params.id, req.user.id)
+
+  if (affectedRows === 0) {
+    return res.status(404).json({ error: 'Quizet hittades inte!' })
+  }
+  res.sendStatus(204)
+}
+
 // GET /api/results/stats?difficulty=beginner – latest result and highscore (logged in only)
 async function stats(req, res) {
   const { difficulty } = req.query
@@ -71,4 +80,5 @@ module.exports = {
   submit,
   stats,
   history,
+  remove
 }

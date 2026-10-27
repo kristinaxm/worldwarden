@@ -983,9 +983,17 @@ function continueQuiz() {
   pendingRoute = null
 }
 
-function confirmCloseQuiz() {
+async function confirmCloseQuiz() {
   showExitModal.value = false
   stopTimer()
+
+  if (attemptId.value && connected.value) {
+    try {
+      await request(`/results/${attemptId.value}`, {}, 'DELETE')
+    } catch (err) {
+      console.warn('Kunde inte radera quiz!', err)
+    }
+  }
 
   answers.value =
     Array(totalQuestions).fill(null)
@@ -996,7 +1004,7 @@ function confirmCloseQuiz() {
 
 // The back button (and any other navigation away from the page) during a quiz
 // is blocked and shows the "Avsluta quiz?" modal instead.
-onBeforeRouteLeave((to) => {
+onBeforeRouteLeave(async (to) => {
   if (!quizInProgress.value || leaveConfirmed) {
     return true
   }

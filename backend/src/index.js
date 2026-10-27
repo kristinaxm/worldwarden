@@ -7,9 +7,14 @@ async function start() {
 
   const cleanup = setInterval(() => {
     pool.query('DELETE FROM sessions WHERE expires_at <= UTC_TIMESTAMP()').catch(() => {
-      console.error('Session cleanup failed')
-    })
-  }, 60 * 60 * 1000)
+    console.error('Session cleanup failed')
+  })
+  pool.query(
+    'DELETE FROM quiz_attempts WHERE completed_at IS NULL AND started_at < UTC_TIMESTAMP() - INTERVAL 1 DAY'
+  ).catch(() => {
+    console.error('Quiz cleanup failed')
+  })
+}, 60 * 60 * 1000)
   cleanup.unref()
 
   const port = process.env.PORT || 3000

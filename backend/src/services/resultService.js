@@ -271,8 +271,17 @@ async function getHistory(userId, difficulty) {
   return [...results.values()]
 }
 
+async function deleteAttempt(attemptId, userId) {
+  const [result] = await pool.query(
+    'DELETE FROM quiz_attempts WHERE id = ? AND user_id = ? AND completed_at IS NULL',
+    [attemptId, userId],
+  )
+  return result.affectedRows
+}
+
 module.exports = {
   submitResults,
   getStats,
   getHistory,
+  deleteAttempt
 }
