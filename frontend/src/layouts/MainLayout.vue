@@ -181,7 +181,7 @@ function closeMobileMenu() {
   font-weight: 700;
   cursor: pointer;
 
-  span {
+  > span {
     flex: 1;
     min-width: 0;
     display: flex;
