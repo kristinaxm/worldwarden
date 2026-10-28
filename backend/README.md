@@ -254,7 +254,7 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
 
 Passwords use Argon2id with a random salt, 19 MiB memory, two iterations and parallelism one. Password hashes never appear in API responses.
 
-Login creates a random 256-bit session token. Only its SHA-256 hash is stored in `sessions`. The raw token is sent in an HttpOnly, SameSite=Lax cookie with a fixed 24-hour lifetime. Sessions survive API restarts. Logging in replaces the supplied browser session; other devices remain signed in. Logout revokes the supplied session immediately. Deleting a user cascades to their sessions. Expired sessions are rejected on every protected request and deleted at startup and hourly.
+Login creates a random 256-bit session token. Only its SHA-256 hash is stored in `sessions`. The raw token is sent in an HttpOnly, SameSite=Lax cookie with a fixed 24-hour lifetime. Sessions survive API restarts. Logging in replaces the supplied browser session; other devices remain signed in. Logout revokes the supplied session immediately. Changing the password logs out every other session of the account and keeps the one that made the change. Deleting a user cascades to their sessions. Expired sessions are rejected on every protected request and deleted at startup and hourly.
 
 Protected routes use the `requireUser` middleware from `src/sessions.js`. It sets `req.user` from the database; account ownership must come from that value rather than a client-supplied user ID. Routes that guests can also use, like the quiz, use `loadUser` instead: it sets `req.user` to the logged in user or `null` and never blocks the request. Add application tables through migrations with foreign keys to `users.id` as needed.
 

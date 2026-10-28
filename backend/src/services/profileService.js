@@ -26,11 +26,27 @@ async function updateEmail(userId, newEmail) {
     return getById(userId);
 }
 
-async function updatePassword(userId, newPasswordHash) {
-    await pool.execute(
-        'UPDATE users SET password_hash = ? WHERE id = ?',
-        [newPasswordHash, userId]
-    )
+// Logs out every other session of the user, so whoever knew the old password loses access.
+// keepSessionHash is the session that changed the password, which stays logged in.
+async function updatePassword(userId, newPasswordHash, keepSessionHash) {
+    const connection = await pool.getConnection()
+    try {
+        await connection.beginTransaction()
+        await connection.execute(
+            'UPDATE users SET password_hash = ? WHERE id = ?',
+            [newPasswordHash, userId]
+        )
+        await connection.execute(
+            'DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?',
+            [userId, keepSessionHash]
+        )
+        await connection.commit()
+    } catch (err) {
+        await connection.rollback()
+        throw err
+    } finally {
+        connection.release()
+    }
 }
 
 async function deleteUser(userId) {
