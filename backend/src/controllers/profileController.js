@@ -4,7 +4,7 @@
 const argon2 = require('argon2')
 const validator = require('validator')
 const profileService = require('../services/profileService.js')
-const { sessionCookie, cookieOptions } = require('../sessions.js')
+const { sessionCookie, cookieOptions, sessionHash } = require('../sessions.js')
 const { pool } = require('../db.js')
 
 // Uppdatera visningsnamn och/eller avatar (kräver inloggning, inget lösenord)
@@ -117,7 +117,7 @@ async function updatePassword(req, res) {
 
     const hashOptions = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 }
     const newPasswordHash = await argon2.hash(newPassword, hashOptions)
-    await profileService.updatePassword(userId, newPasswordHash)
+    await profileService.updatePassword(userId, newPasswordHash, sessionHash(req))
     res.json({ message: 'Lösenordet har uppdaterats!' })
 }
 
