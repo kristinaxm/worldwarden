@@ -68,7 +68,7 @@ async function updateEmail(req, res) {
         res.json({ user: updatedUser })
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: 'E-postadressen är redan registrerad!' })
+            return res.status(409).json({ error: 'E-postadressen är redan registrerad!' })
         }
         throw err
     }
