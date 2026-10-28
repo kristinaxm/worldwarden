@@ -14,6 +14,10 @@ const app = express()
 const origin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
 
 app.disable('x-powered-by')
+// Behind the Vite proxy and Cloudflare Tunnel (both on this machine) every request comes from
+// localhost. Trusting loopback proxies makes req.ip the visitor's real IP, so the login rate
+// limit counts each player separately instead of the whole class together.
+app.set('trust proxy', 'loopback')
 app.use(helmet())
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store')
