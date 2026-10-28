@@ -33,7 +33,7 @@ const levelMedals = Object.entries(LEVEL_NAMES).flatMap(([difficulty, levelName]
 const completedMedals = COMPLETED_COUNTS.map((count) => ({
   id: `quiz-completed-${count}`,
   name: `${count} quiz`,
-  requirement: `Genomför totalt ${count} quiz.`,
+  requirement: `Genomför totalt ${count} quiz med minst hälften rätt (5 av 10).`,
 }))
 
 export const MEDALS = [

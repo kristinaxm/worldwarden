@@ -12,7 +12,7 @@ const TIERS = [
   { id: 'gold', perfect: true },
 ]
 
-// Number of finished quizzes (all difficulties together)
+// Number of finished quizzes with at least half correct (all difficulties together)
 const COMPLETED_COUNTS = [10, 20, 30, 50]
 
 const LEVEL_MEDALS = DIFFICULTIES.flatMap((difficulty) => TIERS.map((tier) => `quiz-${difficulty}-${tier.id}`))
@@ -34,7 +34,7 @@ function unlockedMedals(stats) {
   }
 
   for (const count of COMPLETED_COUNTS) {
-    if (stats.completedCount >= count) unlocked.push(`quiz-completed-${count}`)
+    if (stats.qualifyingCount >= count) unlocked.push(`quiz-completed-${count}`)
   }
 
   if (LEVEL_MEDALS.every((id) => unlocked.includes(id))) unlocked.push('quiz-worldwarden')

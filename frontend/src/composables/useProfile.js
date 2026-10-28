@@ -40,6 +40,8 @@ export function useProfile() {
       email: currentEmail,
       avatar: avatars.find((avatar) => avatar.id === avatarId.value) ?? null,
       createdAt: user.value?.createdAt ?? null,
+      // GitHub-konton saknar lösenord och döljer därför lösenordsformulären
+      hasPassword: user.value?.hasPassword !== false,
     }
   })
 
@@ -89,12 +91,12 @@ export function useProfile() {
   }
 
 
-  async function deleteAccount({ password }) {
+  async function deleteAccount({ password, email }) {
   const res = await fetch('/api/profile', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ password, email }),
   })
 
   if (!res.ok) {

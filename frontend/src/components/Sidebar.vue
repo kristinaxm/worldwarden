@@ -31,21 +31,25 @@ const displayName = computed(() => {
 
       <!-- USER + COLLAPSE BUTTON -->
       <div class="sidebar__header">
-      <button
-        class="sidebar_toggle" 
-        type="button" 
-        :title="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'"
-        :aria-label="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'" @click="emit('toggle')"
+        <button
+          class="sidebar__toggle"
+          type="button"
+          :title="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'"
+          :aria-label="collapsed ? 'Expandera menyn' : 'Fäll ihop menyn'"
+          @click="emit('toggle')"
         >
-          {{ collapsed ? '»' : '«' }}
+          <!-- Chevron points left; it is flipped when the sidebar is collapsed -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
         </button>
 
-        <RouterLink 
-        v-if="user" 
-        :to="{ name: 'profile' }" 
-        class="sidebar__user sidebar__user--button"
-        :title="`Min profil (${user.email})`" 
-        aria-label="Öppna min profil"
+        <RouterLink
+          v-if="user"
+          :to="{ name: 'profile' }"
+          class="sidebar__user sidebar__user--button"
+          :title="`Min profil (${user.email})`"
+          aria-label="Öppna min profil"
         >
           <div class="sidebar__avatar">
             <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
@@ -54,12 +58,12 @@ const displayName = computed(() => {
           <span class="sidebar__user-name">{{ displayName }}</span>
         </RouterLink>
 
-        <RouterLink 
-        v-if="user" 
-        :to="{ name: 'settings' }" 
-        class="sidebar__settings" 
-        title="Kontoinställningar"
-        aria-label="Kontoinställningar"
+        <RouterLink
+          v-if="user"
+          :to="{ name: 'settings' }"
+          class="sidebar__settings"
+          title="Kontoinställningar"
+          aria-label="Kontoinställningar"
         >⚙</RouterLink>
 
         <div v-else class="sidebar__user">
@@ -70,28 +74,23 @@ const displayName = computed(() => {
 
         <!-- NAVIGATION -->
         <nav class="sidebar__navigation">
-
           <RouterLink to="/" class="sidebar__link" title="Huvudmeny" active-class=""
             exact-active-class="router-link-active">
             <span class="sidebar__icon">▦</span>
             <span class="sidebar__text">Huvudmeny</span>
           </RouterLink>
-
           <RouterLink :to="{ name: 'results' }" class="sidebar__link" title="Mina resultat">
             <span class="sidebar__icon">☆</span>
             <span class="sidebar__text">Mina resultat</span>
           </RouterLink>
-
-          <a href="#" class="sidebar__link" title="Topplistor">
+          <RouterLink :to="{ name: 'leaderboard' }" class="sidebar__link" title="Topplistor">
             <span class="sidebar__icon">♜</span>
             <span class="sidebar__text">Topplistor</span>
-          </a>
-
+          </RouterLink>
           <a href="#" class="sidebar__link" title="Kategorier">
             <span class="sidebar__icon">◉</span>
             <span class="sidebar__text">Kategorier</span>
           </a>
-
           <a href="#" class="sidebar__link" title="Community">
             <span class="sidebar__icon">♧</span>
             <span class="sidebar__text">Community</span>
@@ -240,24 +239,39 @@ const displayName = computed(() => {
 
       /* COLLAPSE BUTTON */
       .sidebar__toggle {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
+        padding: 0;
         display: grid;
         place-items: center;
         flex-shrink: 0;
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-        background: white;
-        color: var(--color-text);
-        font-size: 22px;
-        line-height: 1;
+        border: 0;
+        border-radius: 50%;
+        background: var(--color-surface-soft);
+        color: var(--color-text-secondary);
         cursor: pointer;
-        transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+        svg {
+          width: 18px;
+          height: 18px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2.5;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+          transition: transform 0.3s ease;
+        }
 
         &:hover {
           background: var(--color-primary-light);
           color: var(--color-primary-dark);
-          transform: scale(1.05);
+          box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+        }
+
+        &:focus-visible {
+          outline: 3px solid var(--color-primary);
+          outline-offset: 2px;
         }
       }
     }
@@ -390,6 +404,10 @@ const displayName = computed(() => {
         width: 36px;
         height: 36px;
         margin-bottom: 4px;
+
+        svg {
+          transform: rotate(180deg);
+        }
       }
 
       .sidebar__user {
