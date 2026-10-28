@@ -16,6 +16,17 @@ function validPassword(password) {
   return length >= 5 && length <= 128 && /[0-9]/.test(password) && /[\p{P}\p{S}]/u.test(password)
 }
 
+// Says what went wrong, so the user knows what to change. Other errors keep the general message.
+function errorMessage(err, { wrongPassword, fallback }) {
+  // requireUser also answers 401, when the session has expired
+  if (err.status === 401 && err.message === 'Authentication required') return 'Du har blivit utloggad. Logga in igen.'
+  if (err.status === 401) return wrongPassword
+  if (err.status === 409) return 'E-postadressen används redan.'
+  // The profile API's own validation messages are in Swedish
+  if (err.status === 400) return err.message
+  return fallback
+}
+
 async function submitEmail() {
   if (emailForm.pending) return
   emailForm.error = ''
@@ -32,8 +43,11 @@ async function submitEmail() {
     emailForm.newEmail = ''
     emailForm.password = ''
     emailForm.notice = 'Din e-postadress är ändrad.'
-  } catch {
-    emailForm.error = 'Det gick inte att ändra e-postadressen. Försök igen.'
+  } catch (err) {
+    emailForm.error = errorMessage(err, {
+      wrongPassword: 'Fel lösenord.',
+      fallback: 'Det gick inte att ändra e-postadressen. Försök igen.',
+    })
   } finally {
     emailForm.pending = false
   }
@@ -63,8 +77,11 @@ async function submitPassword() {
     passwordForm.next = ''
     passwordForm.confirmation = ''
     passwordForm.notice = 'Ditt lösenord är bytt.'
-  } catch {
-    passwordForm.error = 'Det gick inte att byta lösenord. Försök igen.'
+  } catch (err) {
+    passwordForm.error = errorMessage(err, {
+      wrongPassword: 'Fel nuvarande lösenord.',
+      fallback: 'Det gick inte att byta lösenord. Försök igen.',
+    })
   } finally {
     passwordForm.pending = false
   }
@@ -83,8 +100,11 @@ async function submitDelete() {
   try {
     await deleteAccount({ password: deleteForm.password })
     router.push({ name: 'home' })
-  } catch {
-    deleteForm.error = 'Det gick inte att radera kontot. Försök igen.'
+  } catch (err) {
+    deleteForm.error = errorMessage(err, {
+      wrongPassword: 'Fel lösenord.',
+      fallback: 'Det gick inte att radera kontot. Försök igen.',
+    })
   } finally {
     deleteForm.pending = false
   }

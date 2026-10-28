@@ -22,6 +22,14 @@ const displayName = ref('')
 const avatarId = ref(null)
 const email = ref('')
 
+// The error keeps the HTTP status, so the settings can say what went wrong
+async function apiError(res, fallback) {
+  const data = await res.json().catch(() => ({}))
+  const error = new Error(data.error || fallback)
+  error.status = res.status
+  return error
+}
+
 export function useProfile() {
   const { user, logout, setUser } = useAuth()
 
@@ -65,10 +73,7 @@ export function useProfile() {
       credentials: 'include',
       body: JSON.stringify({ email: newEmail, password }),
     })
-    if (!res.ok) {
-      const data = await res.json()
-      throw new Error(data.error || 'E-postadressen kunde inte uppdateras!')
-    }
+    if (!res.ok) throw await apiError(res, 'E-postadressen kunde inte uppdateras!')
     const data = await res.json()
     email.value = data.user.email
     setUser(data.user)
@@ -81,10 +86,7 @@ export function useProfile() {
       credentials: 'include',
       body: JSON.stringify({ currentPassword, newPassword }),
     })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || 'Kunde inte byta lösenord')
-  }
+    if (!res.ok) throw await apiError(res, 'Kunde inte byta lösenord')
     return res.json()
   }
 
@@ -97,10 +99,7 @@ export function useProfile() {
     body: JSON.stringify({ password }),
   })
 
-  if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.error || 'Kunde inte radera kontot')
-  }
+  if (!res.ok) throw await apiError(res, 'Kunde inte radera kontot')
   await logout()
 }
 
