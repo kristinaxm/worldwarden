@@ -4,6 +4,7 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ResultsView from '@/views/ResultsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import LeaderboardView from '@/views/LeaderboardView.vue'
 import QuizView from "@/views/QuizView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
           path: 'resultat',
           name: 'results',
           component: ResultsView,
+        },
+        {
+          path: 'topplistor',
+          name: 'leaderboard',
+          component: LeaderboardView,
         },
         {
           path: 'installningar',
