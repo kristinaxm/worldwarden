@@ -197,13 +197,14 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
 | `quiz-<difficulty>-bronze` | At least 6 correct on that difficulty |
 | `quiz-<difficulty>-silver` | At least 8 correct |
 | `quiz-<difficulty>-gold` | 10/10 correct |
-| `quiz-completed-10/20/30/50` | That many finished quizzes in total |
+| `quiz-completed-10/20/30/50` | That many finished quizzes with at least half correct (5 of 10) |
 | `quiz-worldwarden` | All 12 level medals |
 | `quiz-4perfect` | 10/10 at least once on all four difficulties |
 
 - A higher score also unlocks the lower tiers, so 10/10 gives bronze, silver and gold at once.
 - Like XP, medals are never stored. They are calculated from the finished quizzes in `quiz_attempts`, so quizzes played before medals existed count too.
 - The rules live in `src/medals.js`. The ids must match `frontend/src/medals.js`, which also holds the names, requirement texts and images.
+- Only quizzes with at least half correct (5 of 10) count towards the `quiz-completed-*` medals. Quizzes with fewer correct answers are still saved and   award XP, but do not count towards these medals.
 
 ## Storage and sessions
 

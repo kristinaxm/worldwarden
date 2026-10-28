@@ -1,11 +1,13 @@
 const { pool } = require('../db.js')
 const { unlockedMedals } = require('../medals.js')
 
-// Best score and whether any quiz was 10/10, per difficulty. Unfinished quizzes are ignored.
+// Best score, whether any quiz was 10/10, and how many quizzes had at least half correct,
+// per difficulty. Unfinished quizzes are ignored.
 // db is either the pool or a connection inside a transaction.
 async function getStats(db, userId) {
   const [rows] = await db.execute(
-    `SELECT difficulty, COUNT(*) AS completedCount, MAX(score) AS bestScore,
+    `SELECT difficulty, COUNT(*) AS completedCount, SUM(score >= 5) AS qualifyingCount,
+            MAX(score) AS bestScore,
             MAX(score = total_questions) AS perfect
      FROM quiz_attempts
      WHERE user_id = ? AND completed_at IS NOT NULL
@@ -15,8 +17,10 @@ async function getStats(db, userId) {
 
   return {
     completedCount: rows.reduce((sum, row) => sum + Number(row.completedCount), 0),
+    qualifyingCount: rows.reduce((sum, row) => sum + Number(row.qualifyingCount), 0),
     levels: Object.fromEntries(
-      rows.map((row) => [row.difficulty, { bestScore: row.bestScore, perfect: Boolean(row.perfect) }]),
+      rows.map((row) => [row.difficulty, { bestScore: row.bestScore, perfect: Boolean(row.perfect) 
+      }]),
     ),
   }
 }
