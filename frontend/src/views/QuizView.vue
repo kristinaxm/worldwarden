@@ -624,10 +624,11 @@ const pepText = computed(() => {
 
 //#region Helpers
 
+// Same rules as the backend: ignores case, whitespace and accents, but keeps å, ä and ö
 function normalizeAnswer(value) {
-  return value
-    ?.trim()
-    .toLocaleLowerCase('sv-SE')
+  return [...(value?.normalize('NFC').trim().toLocaleLowerCase('sv-SE') ?? '')]
+    .map((char) => ('åäö'.includes(char) ? char : char.normalize('NFD').replace(/\p{M}/gu, '')))
+    .join('')
 }
 
 function selectAnswer(answer) {
