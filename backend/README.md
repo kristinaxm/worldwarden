@@ -40,9 +40,7 @@ Invalid input returns `400`. Invalid credentials and missing or expired sessions
 | GET | `/api/countries` | None | `200` with every country, sorted by name |
 | GET | `/api/countries/:id` | None | `200` with one country, `404` if it doesn't exist |
 
-A country looks like `{ "id": 1, "code": "SE", "name": "Sverige", "capital": "Stockholm", "continent": "Europa" }`. The countries are added by migrations.
-
-`POST /api/countries` and `PUT /api/countries/:id` also exist, but they have no authentication yet. Don't use them from the frontend until they are restricted to admins.
+A country looks like `{ "id": 1, "code": "SE", "name": "Sverige", "capital": "Stockholm", "continent": "Europa" }`. The countries are added and changed by migrations only, so the API is read-only.
 
 ## Quiz API
 
