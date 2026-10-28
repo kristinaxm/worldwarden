@@ -21,6 +21,8 @@ const accountLimiter = rateLimit({
 
 router.post('/signup', ipLimiter, authController.credentials, authController.signup)
 router.post('/login', ipLimiter, authController.credentials, accountLimiter, authController.login)
+router.get('/github', ipLimiter, authController.github)
+router.get('/github/callback', ipLimiter, authController.githubCallback)
 router.get('/me', requireUser, authController.me)
 router.post('/logout', authController.logout)
 

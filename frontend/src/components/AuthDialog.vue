@@ -177,6 +177,12 @@ async function submit() {
           </button>
         </form>
 
+        <p class="auth-dialog__divider">eller</p>
+        <!-- Vanlig länk: webbläsaren måste följa serverns redirect till GitHub -->
+        <a class="auth-dialog__github" href="/api/auth/github">
+          Fortsätt med GitHub
+        </a>
+
         <p class="auth-dialog__switch">
           {{ registering ? 'Har du redan ett konto?' : 'Har du inget konto?' }}
           <button type="button" :disabled="pending" @click="switchMode">
@@ -322,6 +328,34 @@ button:focus-visible {
 
 .auth-dialog__submit:hover {
   background: var(--color-primary-dark);
+}
+
+.auth-dialog__divider {
+  margin: 18px 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.auth-dialog__github {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-dialog__github:hover {
+  background: var(--color-primary-light);
+}
+
+.auth-dialog__github:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .auth-dialog__switch {

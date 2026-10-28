@@ -49,6 +49,14 @@ async function restore() {
   } finally {
     pending.value = false
   }
+  // Servern skickar hit ?github=... när GitHub-inloggningen inte gick igenom
+  const githubError = new URLSearchParams(window.location.search).get('github')
+  if (githubError) {
+    error.value = githubError === 'saknas'
+      ? 'GitHub-inloggning är inte konfigurerad på servern. Se GUIDE.md för hur du lägger in nycklarna.'
+      : 'GitHub-inloggningen misslyckades. Försök igen.'
+    window.history.replaceState(null, '', window.location.pathname)
+  }
 }
 
 async function login(credentials) {

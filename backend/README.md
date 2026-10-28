@@ -25,6 +25,8 @@ All POST requests require `Content-Type: application/json`. Errors have the shap
 | --- | --- | --- | --- |
 | POST | `/api/auth/signup` | `{ "email": "player@example.com", "password": "a long example passphrase 1!" }` | `201` with `{ "user": { "id": 1, "email": "player@example.com" } }` |
 | POST | `/api/auth/login` | Email and password | `200` with the user and a session cookie |
+| GET | `/api/auth/github` | None | `302` to GitHub's consent page |
+| GET | `/api/auth/github/callback` | None | `302` to the frontend with a session cookie |
 | GET | `/api/auth/me` | None | `200` with `{ "user": { "id": 1, "email": "player@example.com", "createdAt": "..." } }` |
 | POST | `/api/auth/logout` | `{}` | `204`, revokes the current session and clears its cookie |
 | GET | `/api/health` | None | `200` with `{ "status": "ok", "db": "connected" }` |
@@ -32,6 +34,16 @@ All POST requests require `Content-Type: application/json`. Errors have the shap
 Signup creates an account without logging in. Email addresses use ASCII, are trimmed and lowercased, and are unique. Provider-specific aliases such as dots and plus tags are preserved. New passwords contain 5–128 Unicode code points, at least one digit (0–9), and at least one punctuation or symbol character, such as `!` or `#`. Whitespace is preserved but does not count as a symbol. Login accepts existing passwords without imposing the new registration rules. Unknown input fields are ignored.
 
 Invalid input returns `400`. Invalid credentials and missing or expired sessions return `401`. Disallowed origins return `403`, duplicate emails `409`, oversized bodies `413`, non-JSON writes `415`, and excessive attempts `429`. Unexpected failures return a generic `500`. Duplicate signup responses reveal whether an email is registered; login failures use the same response for unknown emails and incorrect passwords.
+
+## GitHub login (OAuth2)
+
+Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `BACKEND_ORIGIN` in `.env` from an OAuth App on github.com, with the callback URL `BACKEND_ORIGIN` + `/api/auth/github/callback`. One OAuth App serves the whole team, since the callback resolves to each developer's own machine. Without a client id the rest of the API works unconfigured and `/api/auth/github` redirects to `FRONTEND_ORIGIN/?github=saknas`, which the UI shows as a missing-configuration message. The keys are read once at startup, so restart the API after adding them.
+
+`GET /api/auth/github` must be a normal browser navigation, not `fetch`. It stores a random `state` in a short-lived cookie and redirects to GitHub. The callback rejects a missing or mismatched `state`, exchanges the code for a token, and reads the account's id and verified primary email (`read:user user:email`), since the public profile email can be hidden.
+
+GitHub accounts are stored in `users` like every other account, identified by `github_id`. A first GitHub login on an email that already has a password account links the two rows instead of creating a second one, so both ways in reach the same profile, XP and medals. GitHub accounts have an empty `password_hash` and can never be logged into with the password form. The callback ends in `createSession`, the same session as a password login, so every `requireUser` route works unchanged. Account settings follow from the empty password: `POST /api/profile/email` and `POST /api/profile/password` answer `400` for a GitHub account instead of verifying a password, and `DELETE /api/profile` confirms with the account's own email address rather than a password. `GET /api/auth/me` returns `hasPassword`, which the UI uses to hide the password forms. Password accounts are unaffected and still require their password for all three.
+
+Failures redirect to `FRONTEND_ORIGIN/?github=fel` instead of showing an API error. The link is a page navigation, so errors must redirect rather than return JSON, which would otherwise replace the app with a raw error body.
 
 ## Countries API
 
