@@ -52,8 +52,10 @@ A quiz is played in three requests. `beginner`, `medium`, `advanced`, and `exper
 | --- | --- | --- | --- |
 | `beginner` | Flag + 2 country names | `country` | The country's name |
 | `medium` | Flag + 4 capitals | `capital` | The country's capital |
-| `advanced` | Flag + country text field | `country` | The country's name, ignoring case and surrounding whitespace |
-| `expert` | Flag + country and capital text fields | `country`, `capital` | Both answers must match, ignoring case and surrounding whitespace |
+| `advanced` | Flag + country text field | `country` | The country's name, ignoring case, surrounding whitespace and accents |
+| `expert` | Flag + country and capital text fields | `country`, `capital` | Both answers must match, ignoring case, surrounding whitespace and accents |
+
+Accents means that `Bogota` matches `Bogotá` and `Sao Tome` matches `São Tomé`. `å`, `ä` and `ö` are separate letters in Swedish and still have to be typed.
 
 Everything that differs between levels is configured in `src/quizLevels.js`. The rest of the quiz code is shared.
 
