@@ -39,6 +39,9 @@ async function updateEmail(req, res) {
     if (!user) {
         return res.status(404).json({ error: 'Användaren hittades inte!' })
     }
+    if (!user.password_hash) {
+        return res.status(400).json({ error: 'Kontot använder GitHub-inloggning och har inget lösenord.' })
+    }
     const valid = await argon2.verify(user.password_hash, password)
     if (!valid) {
         return res.status(401).json({ error: 'Felaktigt lösenord!' })
@@ -86,6 +89,9 @@ async function updatePassword(req, res) {
     if (!user) {
         return res.status(404).json({ error: 'Användaren hittades inte!' })
     }
+    if (!user.password_hash) {
+        return res.status(400).json({ error: 'Kontot använder GitHub-inloggning och har inget lösenord.' })
+    }
     const valid = await argon2.verify(user.password_hash, currentPassword)
     if (!valid) {
         return res.status(401).json({ error: 'Felaktigt nuvarande lösenord!' })
@@ -101,22 +107,30 @@ async function updatePassword(req, res) {
 async function deleteUser(req, res) {
     const userId = req.user.id
 
-    const { password } = req.body
-    if (typeof password !== 'string' || !password.length) {
-        return res.status(400).json({ error: 'Lösenord krävs för att radera kontot!' })
-    }
+    const { password, email } = req.body
 
     const [users] = await pool.execute(
-        'SELECT id, password_hash FROM users WHERE id = ?', 
+        'SELECT id, email, password_hash FROM users WHERE id = ?', 
         [userId],
     )
     const user = users[0]
     if (!user) {
         return res.status(404).json({ error: 'Användaren hittades inte!' })
     }
-    const valid = await argon2.verify(user.password_hash, password)
-    if (!valid) {
-        return res.status(401).json({ error: 'Felaktigt lösenord!' })
+
+    // GitHub-konton har inget lösenord, så de bekräftar med sin e-postadress i stället
+    if (!user.password_hash) {
+        if (typeof email !== 'string' || email.trim().toLowerCase() !== user.email) {
+            return res.status(401).json({ error: 'Fel e-postadress!' })
+        }
+    } else {
+        if (typeof password !== 'string' || !password.length) {
+            return res.status(400).json({ error: 'Lösenord krävs för att radera kontot!' })
+        }
+        const valid = await argon2.verify(user.password_hash, password)
+        if (!valid) {
+            return res.status(401).json({ error: 'Felaktigt lösenord!' })
+        }
     }
     await profileService.deleteUser(userId)
     res.clearCookie(sessionCookie, cookieOptions)

@@ -8,7 +8,7 @@ const { profile, changeEmail, changePassword, deleteAccount } = useProfile()
 
 const emailForm = reactive({ newEmail: '', password: '', pending: false, error: '', notice: '' })
 const passwordForm = reactive({ current: '', next: '', confirmation: '', pending: false, error: '', notice: '' })
-const deleteForm = reactive({ open: false, password: '', pending: false, error: '' })
+const deleteForm = reactive({ open: false, password: '', email: '', pending: false, error: '' })
 
 // Same rules as when creating an account (AuthDialog)
 function validPassword(password) {
@@ -73,6 +73,7 @@ async function submitPassword() {
 function closeDelete() {
   deleteForm.open = false
   deleteForm.password = ''
+  deleteForm.email = ''
   deleteForm.error = ''
 }
 
@@ -81,7 +82,7 @@ async function submitDelete() {
   deleteForm.error = ''
   deleteForm.pending = true
   try {
-    await deleteAccount({ password: deleteForm.password })
+    await deleteAccount({ password: deleteForm.password, email: deleteForm.email })
     router.push({ name: 'home' })
   } catch {
     deleteForm.error = 'Det gick inte att radera kontot. Försök igen.'
@@ -93,8 +94,13 @@ async function submitDelete() {
 
 <template>
   <div class="settings">
+    <!-- GitHub-konton har inget lösenord, så e-post och lösenord sköts hos GitHub -->
+    <p v-if="!profile.hasPassword" class="settings__description">
+      Du är inloggad med GitHub. E-postadress och lösenord ändrar du på ditt GitHub-konto.
+    </p>
+
     <!-- CHANGE EMAIL -->
-    <form class="settings__form" :aria-busy="emailForm.pending" @submit.prevent="submitEmail">
+    <form v-if="profile.hasPassword" class="settings__form" :aria-busy="emailForm.pending" @submit.prevent="submitEmail">
       <h3>Byt e-postadress</h3>
       <p class="settings__description">Nuvarande: <strong>{{ profile.email }}</strong></p>
 
@@ -131,7 +137,7 @@ async function submitDelete() {
     </form>
 
     <!-- CHANGE PASSWORD -->
-    <form class="settings__form" :aria-busy="passwordForm.pending" @submit.prevent="submitPassword">
+    <form v-if="profile.hasPassword" class="settings__form" :aria-busy="passwordForm.pending" @submit.prevent="submitPassword">
       <h3>Byt lösenord</h3>
       <p class="settings__description">5–128 tecken, minst en siffra och en symbol, till exempel ! eller #.</p>
 
@@ -187,15 +193,30 @@ async function submitDelete() {
       <form v-else class="settings__confirm" :aria-busy="deleteForm.pending" @submit.prevent="submitDelete">
         <div v-if="deleteForm.error" class="settings__message settings__message--error" role="alert">{{ deleteForm.error }}</div>
 
-        <label for="settings-delete-password">Skriv ditt lösenord för att bekräfta</label>
-        <input
-          id="settings-delete-password"
-          v-model="deleteForm.password"
-          type="password"
-          autocomplete="current-password"
-          required
-          :readonly="deleteForm.pending"
-        />
+        <template v-if="profile.hasPassword">
+          <label for="settings-delete-password">Skriv ditt lösenord för att bekräfta</label>
+          <input
+            id="settings-delete-password"
+            v-model="deleteForm.password"
+            type="password"
+            autocomplete="current-password"
+            required
+            :readonly="deleteForm.pending"
+          />
+        </template>
+        <template v-else>
+          <label for="settings-delete-email">Skriv din e-postadress för att bekräfta</label>
+          <input
+            id="settings-delete-email"
+            v-model="deleteForm.email"
+            type="email"
+            autocapitalize="none"
+            :spellcheck="false"
+            :placeholder="profile.email"
+            required
+            :readonly="deleteForm.pending"
+          />
+        </template>
 
         <div class="settings__confirm-actions">
           <button class="settings__delete settings__delete--filled" type="submit" :disabled="deleteForm.pending">
