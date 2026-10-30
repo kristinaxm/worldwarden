@@ -87,6 +87,10 @@ const displayName = computed(() => {
             <span class="sidebar__icon">♜</span>
             <span class="sidebar__text">Topplistor</span>
           </RouterLink>
+          <RouterLink :to="{ name: 'coplay' }" class="sidebar__link" title="Spela tillsammans">
+            <span class="sidebar__icon">♟</span>
+            <span class="sidebar__text">Spela tillsammans</span>
+          </RouterLink>
           <a href="#" class="sidebar__link" title="Kategorier">
             <span class="sidebar__icon">◉</span>
             <span class="sidebar__text">Kategorier</span>
