@@ -2,7 +2,8 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
-import { avatars } from '@/composables/useProfile'
+import { findAvatar } from '@/composables/useProfile'
+import AvatarIcon from '@/components/AvatarIcon.vue'
 
 defineProps({
   collapsed: {
@@ -17,7 +18,7 @@ defineOptions({ name: 'AppSidebar' })
 const { user, pending, logout } = useAuth()
 
 const userAvatar = computed(() => {
-  return avatars.find((a) => a.id === user.value?.avatar) ?? null
+  return findAvatar(user.value?.avatar, user.value?.githubAvatarUrl)
 })
 
 const displayName = computed(() => {
@@ -52,8 +53,7 @@ const displayName = computed(() => {
           aria-label="Öppna min profil"
         >
           <div class="sidebar__avatar">
-            <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
-            <span v-else>👤</span>
+            <AvatarIcon :avatar="userAvatar" fallback="👤" />
           </div>
           <span class="sidebar__user-name">{{ displayName }}</span>
         </RouterLink>

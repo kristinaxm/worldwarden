@@ -18,6 +18,13 @@ export const avatars = [
   { id: 'panda', emoji: '🐼', label: 'Panda', color: '#eef0ee' },
 ]
 
+// The avatar for an id, shown with AvatarIcon. 'github' is the profile picture from GitHub,
+// which only accounts that have logged in with GitHub have.
+export function findAvatar(id, githubAvatarUrl) {
+  if (id === 'github') return githubAvatarUrl ? { id, label: 'Bild från GitHub', imageUrl: githubAvatarUrl } : null
+  return avatars.find((avatar) => avatar.id === id) ?? null
+}
+
 const displayName = ref('')
 const avatarId = ref(null)
 const email = ref('')
@@ -46,7 +53,8 @@ export function useProfile() {
     return {
       displayName: displayName.value || currentEmail.split('@')[0],
       email: currentEmail,
-      avatar: avatars.find((avatar) => avatar.id === avatarId.value) ?? null,
+      avatar: findAvatar(avatarId.value, user.value?.githubAvatarUrl),
+      githubAvatarUrl: user.value?.githubAvatarUrl ?? null,
       createdAt: user.value?.createdAt ?? null,
       // GitHub-konton saknar lösenord och döljer därför lösenordsformulären
       hasPassword: user.value?.hasPassword !== false,
