@@ -7,11 +7,12 @@ const dummyHash = argon2.hash(randomBytes(32), hashOptions)
 
 async function createUser(email, password) {
   const passwordHash = await argon2.hash(password, hashOptions)
+  const displayName = email?.split('@')[0] ?? null
   const [result] = await pool.execute(
-    'INSERT INTO users (email, password_hash) VALUES (?, ?)',
-    [email, passwordHash],
+    'INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)',
+    [email, passwordHash, displayName],
   )
-  return { id: result.insertId, email }
+  return { id: result.insertId, email, display_name: displayName }
 }
 
 async function getUserByEmail(email) {
@@ -43,10 +44,10 @@ async function findOrCreateGithubUser(githubId, email) {
   }
 
   const [result] = await pool.execute(
-    'INSERT INTO users (email, github_id) VALUES (?, ?)',
+    'INSERT INTO users (email, github_id, display_name) VALUES (?, ?, ?)',
     [email, githubId],
   )
-  return { id: result.insertId, email, display_name: null, avatar: null }
+  return { id: result.insertId, email, display_name: displayName, avatar: null }
 }
 
 async function deleteSession(hash) {
