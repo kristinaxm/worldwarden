@@ -153,6 +153,23 @@ Errors: `400` for an unknown difficulty, an invalid `attemptId`, an unknown flag
 }
 ```
 
+## Co-play
+
+One player hosts a game and shares a six-character code; everyone else joins with it. All players get the same questions and the same answer options, because the questions are built once when the room is created and stored on the room. The code alphabet leaves out `0`, `O`, `1` and `I` so a code is easy to read out loud.
+
+| Method | Path | Who | Success |
+| --- | --- | --- | --- |
+| POST | `/api/coplay` | Logged in | `201` with `{ "code": "JMHG4T", "difficulty": "beginner", "isHost": true }` |
+| POST | `/api/coplay/:code/join` | Logged in | `200` with the room; `409` once the game has started |
+| GET | `/api/coplay/:code` | Logged in | `200` with the players in the lobby and whether it has started |
+| POST | `/api/coplay/:code/start` | Host only | `200`; closes the room for new players |
+| GET | `/api/coplay/:code/questions` | Players | `200` with the shared questions and the player's own `attemptId` |
+| GET | `/api/coplay/:code/scores` | Players | `200` with every player's score and placement |
+
+Each player gets their own `quiz_attempts` row, created the first time they fetch the questions, and finishes the quiz with the normal `POST /api/results`. A co-play quiz therefore counts exactly like a solo quiz for results, XP, medals and highscores, and needs no special case anywhere else. The difficulty must be unlocked for the host and for every player who joins, so co-play cannot be used to skip the XP levels. Hints are stripped from the stored questions, since a shared question is fetched once per player and the hint would otherwise be readable without being counted.
+
+Scores are ordered like a highscore: most correct first, then fastest. Players who have not finished sort last with `place: null`. The frontend shows a 20-second timer per question, so everyone gets the same time to answer; the server does not enforce it.
+
 ## XP and levels
 
 XP is only calculated by the server, when a logged in user's quiz is submitted. The rules live in `src/xpLevels.js`.

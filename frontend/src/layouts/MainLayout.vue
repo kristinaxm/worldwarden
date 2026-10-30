@@ -93,6 +93,9 @@ function closeMobileMenu() {
             <RouterLink :to="{ name: 'leaderboard' }" @click="closeMobileMenu">
               ♜ Topplistor
             </RouterLink>
+            <RouterLink :to="{ name: 'coplay' }" @click="closeMobileMenu">
+              ♟ Spela tillsammans
+            </RouterLink>
             <a href="#">
               ◉ Kategorier
             </a>
