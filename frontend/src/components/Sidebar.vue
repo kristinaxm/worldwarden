@@ -87,14 +87,10 @@ const displayName = computed(() => {
             <span class="sidebar__icon">♜</span>
             <span class="sidebar__text">Topplistor</span>
           </RouterLink>
-          <a href="#" class="sidebar__link" title="Kategorier">
-            <span class="sidebar__icon">◉</span>
-            <span class="sidebar__text">Kategorier</span>
-          </a>
-          <a href="#" class="sidebar__link" title="Community">
+          <RouterLink :to="{ name: 'about' }" class="sidebar__link" title="Om oss">
             <span class="sidebar__icon">♧</span>
-            <span class="sidebar__text">Community</span>
-          </a>
+            <span class="sidebar__text">Om oss</span>
+          </RouterLink>
         </nav>
 
         <!-- DIVIDER -->
