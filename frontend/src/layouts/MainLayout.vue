@@ -94,12 +94,9 @@ function closeMobileMenu() {
             <RouterLink :to="{ name: 'leaderboard' }" @click="closeMobileMenu">
               ♜ Topplistor
             </RouterLink>
-            <a href="#">
-              ◉ Kategorier
-            </a>
-            <a href="#">
-              ♧ Community
-            </a>
+            <RouterLink :to="{ name: 'about' }" @click="closeMobileMenu">
+              ♧ Om oss
+            </RouterLink>
           </nav>
           <div class="mobile-menu__divider"></div>
           <div class="mobile-menu__auth">
@@ -120,9 +117,9 @@ function closeMobileMenu() {
             </button>
           </div>
           <div class="mobile-menu__footer">
-            <a href="#">Hjälp</a>
-            <a href="#">Integritetspolicy</a>
-            <a href="#">Användarvillkor </a>
+            <RouterLink :to="{ name: 'help' }" @click="closeMobileMenu">Hjälp</RouterLink>
+            <RouterLink :to="{ name: 'privacy' }" @click="closeMobileMenu">Integritetspolicy</RouterLink>
+            <RouterLink :to="{ name: 'terms' }" @click="closeMobileMenu">Användarvillkor</RouterLink>
           </div>
         </div>
       </div>
