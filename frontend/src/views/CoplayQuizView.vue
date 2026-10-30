@@ -5,10 +5,6 @@ import { useXp } from '@/composables/useXp'
 import { useMedals } from '@/composables/useMedals'
 import { request } from '@/api'
 
-// Sekunder per fråga. När tiden tar slut går quizet vidare av sig själv,
-// så alla spelare hinner lika länge på varje fråga.
-const SECONDS_PER_QUESTION = 20
-
 const route = useRoute()
 const router = useRouter()
 const { setXp, loadXp } = useXp()
@@ -19,74 +15,107 @@ const code = computed(() => String(route.params.code || '').toUpperCase())
 const questions = ref([])
 const difficulty = ref('')
 const attemptId = ref(null)
-const index = ref(0)
-const answers = ref([])
+const current = ref(1)
+const answeredCount = ref(0)
+const playerCount = ref(0)
+const isHost = ref(false)
+const hasAnswered = ref(false)
 const countryAnswer = ref('')
 const capitalAnswer = ref('')
-const secondsLeft = ref(SECONDS_PER_QUESTION)
 const finished = ref(false)
 const scores = ref(null)
 const pending = ref(true)
+const advancing = ref(false)
 const error = ref('')
-let tick
+let statePoll
 let scorePoll
 
-const question = computed(() => questions.value[index.value] || null)
+const question = computed(() => questions.value[current.value - 1] || null)
 const isExpert = computed(() => difficulty.value === 'expert')
 const isTyped = computed(() => ['advanced', 'expert'].includes(difficulty.value))
 const flagUrl = computed(() => (question.value ? `https://flagcdn.com/w640/${question.value.flagCode}.png` : ''))
+const isLast = computed(() => current.value >= questions.value.length)
 
-function stopTimers() {
-  clearInterval(tick)
+function stopPolling() {
+  clearInterval(statePoll)
   clearInterval(scorePoll)
-  tick = null
+  statePoll = null
   scorePoll = null
 }
-onBeforeUnmount(stopTimers)
+onBeforeUnmount(stopPolling)
 
-function startCountdown() {
-  clearInterval(tick)
-  secondsLeft.value = SECONDS_PER_QUESTION
-  tick = setInterval(() => {
-    secondsLeft.value -= 1
-    if (secondsLeft.value <= 0) answer(null)
-  }, 1000)
-}
+// Alla pollar rummet: värden styr vilken fråga som visas, så alla följer med
+async function loadState() {
+  try {
+    const state = await request(`/coplay/${code.value}/state`)
+    answeredCount.value = state.answered
+    playerCount.value = state.players
+    isHost.value = state.isHost
 
-// Sparar svaret på den aktuella frågan och går vidare, eller avslutar quizet
-function answer(value) {
-  if (finished.value || !question.value) return
-  const current = question.value
-
-  answers.value.push({
-    number: current.number,
-    flagCode: current.flagCode,
-    country: isTyped.value ? (countryAnswer.value.trim() || null) : value,
-    ...(isExpert.value ? { capital: capitalAnswer.value.trim() || null } : {}),
-  })
-
-  countryAnswer.value = ''
-  capitalAnswer.value = ''
-
-  if (index.value + 1 >= questions.value.length) {
-    submit()
-    return
+    if (state.finished) {
+      submit()
+      return
+    }
+    if (state.currentQuestion !== current.value) {
+      current.value = state.currentQuestion
+      hasAnswered.value = false
+      countryAnswer.value = ''
+      capitalAnswer.value = ''
+    }
+  } catch {
+    // Nästa poll försöker igen
   }
-  index.value += 1
-  startCountdown()
 }
 
+async function answer(value) {
+  if (hasAnswered.value || !question.value) return
+  hasAnswered.value = true
+  try {
+    await request(`/coplay/${code.value}/answer`, {
+      number: question.value.number,
+      country: isTyped.value ? (countryAnswer.value.trim() || null) : value,
+      ...(isExpert.value ? { capital: capitalAnswer.value.trim() || null } : {}),
+    })
+    loadState()
+  } catch {
+    // Låt spelaren försöka igen om svaret inte gick fram
+    hasAnswered.value = false
+  }
+}
+
+async function next() {
+  if (advancing.value) return
+  advancing.value = true
+  try {
+    await request(`/coplay/${code.value}/next`, {})
+    await loadState()
+  } catch (err) {
+    error.value = err.message || 'Det gick inte att gå vidare.'
+  } finally {
+    advancing.value = false
+  }
+}
+
+// Hämtar spelarens sparade svar och lämnar in dem som ett vanligt quiz
 async function submit() {
-  stopTimers()
+  if (finished.value) return
   finished.value = true
+  stopPolling()
   pending.value = true
   try {
+    const saved = await request(`/coplay/${code.value}/answers`)
+    const byNumber = new Map(saved.map((item) => [item.number, item]))
+
     const result = await request('/results', {
       attemptId: attemptId.value,
       difficulty: difficulty.value,
-      answers: answers.value,
+      answers: questions.value.map((item) => ({
+        number: item.number,
+        flagCode: item.flagCode,
+        country: byNumber.get(item.number)?.country ?? null,
+        ...(isExpert.value ? { capital: byNumber.get(item.number)?.capital ?? null } : {}),
+      })),
     })
-    // Samma XP- och medaljhantering som ett vanligt quiz
     if (result.xp) {
       setXp(result.xp)
       loadXp()
@@ -97,7 +126,6 @@ async function submit() {
   } finally {
     pending.value = false
     loadScores()
-    // Ställningen fylls på medan de andra spelar klart
     scorePoll = setInterval(loadScores, 3000)
   }
 }
@@ -120,7 +148,9 @@ onMounted(async () => {
     questions.value = quiz.questions
     difficulty.value = quiz.difficulty
     attemptId.value = quiz.attemptId
-    startCountdown()
+    current.value = quiz.currentQuestion
+    await loadState()
+    statePoll = setInterval(loadState, 2000)
   } catch (err) {
     error.value = err.message || 'Det gick inte att hämta frågorna.'
   } finally {
@@ -159,29 +189,44 @@ onMounted(async () => {
     <!-- Frågorna -->
     <div v-else-if="question" class="cq__question">
       <header class="cq__top">
-        <span>Fråga {{ index + 1 }} av {{ questions.length }}</span>
-        <span class="cq__timer" :class="{ 'cq__timer--low': secondsLeft <= 5 }">{{ secondsLeft }}s</span>
+        <span>Fråga {{ current }} av {{ questions.length }}</span>
+        <span class="cq__answered" :title="'Så många har svarat på den här frågan'">
+          {{ answeredCount }}/{{ playerCount }} har svarat
+        </span>
       </header>
 
       <img class="cq__flag" :src="flagUrl" alt="Flagga" />
 
       <div v-if="!isTyped" class="cq__options">
-        <button v-for="option in question.options" :key="option" type="button" @click="answer(option)">
+        <button
+          v-for="option in question.options"
+          :key="option"
+          type="button"
+          :disabled="hasAnswered"
+          @click="answer(option)"
+        >
           {{ option }}
         </button>
       </div>
 
       <form v-else class="cq__typed" @submit.prevent="answer(null)">
         <label for="cq-country">Land</label>
-        <input id="cq-country" v-model="countryAnswer" :spellcheck="false" autocomplete="off" />
+        <input id="cq-country" v-model="countryAnswer" :spellcheck="false" autocomplete="off" :readonly="hasAnswered" />
 
         <template v-if="isExpert">
           <label for="cq-capital">Huvudstad</label>
-          <input id="cq-capital" v-model="capitalAnswer" :spellcheck="false" autocomplete="off" />
+          <input id="cq-capital" v-model="capitalAnswer" :spellcheck="false" autocomplete="off" :readonly="hasAnswered" />
         </template>
 
-        <button type="submit">Svara</button>
+        <button type="submit" :disabled="hasAnswered">Svara</button>
       </form>
+
+      <p v-if="hasAnswered" class="cq__waiting-note">Ditt svar är sparat. Väntar på värden…</p>
+
+      <!-- Bara värden går vidare, så alla ser samma fråga samtidigt -->
+      <button v-if="isHost" class="cq__next" type="button" :disabled="advancing" @click="next">
+        {{ advancing ? 'Går vidare…' : isLast ? 'Avsluta quizet' : 'Nästa fråga' }}
+      </button>
     </div>
   </section>
 </template>
@@ -209,23 +254,18 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
   color: var(--color-text-secondary);
   font-size: 14px;
 }
 
-.cq__timer {
-  min-width: 56px;
+.cq__answered {
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--color-surface-soft);
   font-weight: 700;
-  text-align: center;
-}
-
-.cq__timer--low {
-  background: #fff0ed;
-  color: #9e3020;
+  white-space: nowrap;
 }
 
 .cq__flag {
@@ -251,8 +291,13 @@ onMounted(async () => {
   font-weight: 700;
 }
 
-.cq__options button:hover {
+.cq__options button:hover:not(:disabled) {
   background: var(--color-primary-light);
+}
+
+.cq__options button:disabled,
+.cq__typed button:disabled {
+  opacity: 0.6;
 }
 
 .cq__typed {
@@ -278,7 +323,8 @@ input {
 }
 
 .cq__typed button,
-.cq__actions button {
+.cq__actions button,
+.cq__next {
   min-height: 48px;
   padding: 0 20px;
   border: 0;
@@ -289,8 +335,21 @@ input {
 }
 
 .cq__typed button:hover,
-.cq__actions button:hover {
+.cq__actions button:hover,
+.cq__next:hover {
   background: var(--color-primary-dark);
+}
+
+.cq__next {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.cq__waiting-note {
+  margin-top: 16px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
 }
 
 .cq__scores {

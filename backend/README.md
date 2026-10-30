@@ -164,11 +164,19 @@ One player hosts a game and shares a six-character code; everyone else joins wit
 | GET | `/api/coplay/:code` | Logged in | `200` with the players in the lobby and whether it has started |
 | POST | `/api/coplay/:code/start` | Host only | `200`; closes the room for new players |
 | GET | `/api/coplay/:code/questions` | Players | `200` with the shared questions and the player's own `attemptId` |
+| GET | `/api/coplay/:code/state` | Players | `200` with the current question and how many have answered it |
+| POST | `/api/coplay/:code/answer` | Players | `200`; saves the answer to the current question |
+| POST | `/api/coplay/:code/next` | Host only | `200` with the next question, or `finished` after the last |
+| GET | `/api/coplay/:code/answers` | Players | `200` with the player's own saved answers |
 | GET | `/api/coplay/:code/scores` | Players | `200` with every player's score and placement |
 
 Each player gets their own `quiz_attempts` row, created the first time they fetch the questions, and finishes the quiz with the normal `POST /api/results`. A co-play quiz therefore counts exactly like a solo quiz for results, XP, medals and highscores, and needs no special case anywhere else. The difficulty must be unlocked for the host and for every player who joins, so co-play cannot be used to skip the XP levels. Hints are stripped from the stored questions, since a shared question is fetched once per player and the hint would otherwise be readable without being counted.
 
-Scores are ordered like a highscore: most correct first, then fastest. Players who have not finished sort last with `place: null`. The frontend shows a 20-second timer per question, so everyone gets the same time to answer; the server does not enforce it.
+The host decides when the game moves on. `current_question` on the room is the question everyone sees, and the clients poll `/state` every two seconds, so all players change question at the same time. `/state` also returns `answered` and `players`, which the UI shows as "4/10 har svarat" for the current question.
+
+Answers are saved one at a time in `coplay_answers` as each player answers, which is what makes that count possible: in `quiz_answers` a skipped answer is also `NULL`, so there is no way to tell "has not answered" from "answered blank". Answering the same question twice overwrites the answer instead of counting twice, and answering a question the host has already passed returns `409`. When the host passes the last question `/state` reports `finished`, and every client submits its saved answers through the normal `POST /api/results`. A player who stopped answering still gets a saved result, with the missing answers counted as skipped.
+
+Scores are ordered like a highscore: most correct first, then fastest. Players who have not finished sort last with `place: null`.
 
 ## XP and levels
 

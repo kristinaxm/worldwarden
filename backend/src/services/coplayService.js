@@ -41,7 +41,9 @@ async function createRoom(user, difficulty) {
 
 async function findRoom(code) {
   const [rooms] = await pool.execute(
-    'SELECT id, code, host_id AS hostId, difficulty, questions, started_at AS startedAt FROM coplay_rooms WHERE code = ?',
+    `SELECT id, code, host_id AS hostId, difficulty, questions, started_at AS startedAt,
+            current_question AS currentQuestion
+     FROM coplay_rooms WHERE code = ?`,
     [typeof code === 'string' ? code.trim().toUpperCase() : ''],
   )
   return rooms[0] || null
@@ -124,7 +126,87 @@ async function getQuestions(user, code) {
     )
   }
 
-  return { attemptId, difficulty: room.difficulty, questions }
+  return {
+    attemptId,
+    difficulty: room.difficulty,
+    questions,
+    currentQuestion: room.currentQuestion,
+  }
+}
+
+// Alla i spelet pollar den här: vilken fråga rummet visar och hur många som svarat på den
+async function getState(user, code) {
+  const room = await findRoom(code)
+  if (!room) throw httpError(404, 'Hittade inget spel med den koden')
+
+  const [[counts]] = await pool.execute(
+    `SELECT
+       (SELECT COUNT(*) FROM coplay_players WHERE room_id = ?) AS players,
+       (SELECT COUNT(*) FROM coplay_answers WHERE room_id = ? AND question_number = ?) AS answered`,
+    [room.id, room.id, room.currentQuestion],
+  )
+
+  const { questions } = typeof room.questions === 'string' ? JSON.parse(room.questions) : room.questions
+
+  return {
+    currentQuestion: room.currentQuestion,
+    totalQuestions: questions.length,
+    // Spelet är slut när värden gått förbi sista frågan
+    finished: room.currentQuestion > questions.length,
+    isHost: room.hostId === user.id,
+    players: counts.players,
+    answered: counts.answered,
+  }
+}
+
+// Sparar spelarens svar på en fråga. Samma fråga igen skriver över svaret.
+async function saveAnswer(user, code, number, country, capital) {
+  const room = await findRoom(code)
+  if (!room) throw httpError(404, 'Hittade inget spel med den koden')
+  if (!room.startedAt) throw httpError(409, 'Spelet har inte startat än')
+  if (number !== room.currentQuestion) throw httpError(409, 'Frågan har redan passerat')
+
+  const [players] = await pool.execute(
+    'SELECT user_id FROM coplay_players WHERE room_id = ? AND user_id = ?',
+    [room.id, user.id],
+  )
+  if (!players[0]) throw httpError(403, 'Du är inte med i det här spelet')
+
+  await pool.execute(
+    `INSERT INTO coplay_answers (room_id, user_id, question_number, country_answer, capital_answer)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE country_answer = VALUES(country_answer), capital_answer = VALUES(capital_answer)`,
+    [room.id, user.id, number, country ?? null, capital ?? null],
+  )
+  return { saved: true }
+}
+
+// Bara värden går vidare till nästa fråga
+async function nextQuestion(user, code) {
+  const room = await findRoom(code)
+  if (!room) throw httpError(404, 'Hittade inget spel med den koden')
+  if (room.hostId !== user.id) throw httpError(403, 'Bara värden kan gå vidare')
+  if (!room.startedAt) throw httpError(409, 'Spelet har inte startat än')
+
+  const { questions } = typeof room.questions === 'string' ? JSON.parse(room.questions) : room.questions
+  if (room.currentQuestion > questions.length) return { currentQuestion: room.currentQuestion, finished: true }
+
+  const next = room.currentQuestion + 1
+  await pool.execute('UPDATE coplay_rooms SET current_question = ? WHERE id = ?', [next, room.id])
+  return { currentQuestion: next, finished: next > questions.length }
+}
+
+// Spelarens egna svar, i ordning, redo att skickas till POST /api/results
+async function getOwnAnswers(user, code) {
+  const room = await findRoom(code)
+  if (!room) throw httpError(404, 'Hittade inget spel med den koden')
+
+  const [rows] = await pool.execute(
+    `SELECT question_number AS number, country_answer AS country, capital_answer AS capital
+     FROM coplay_answers WHERE room_id = ? AND user_id = ? ORDER BY question_number`,
+    [room.id, user.id],
+  )
+  return rows
 }
 
 // Scoreboard: everyone's score, ranked. Same order as a highscore: most correct, then fastest.
@@ -173,5 +255,9 @@ module.exports = {
   getLobby,
   startRoom,
   getQuestions,
+  getState,
+  saveAnswer,
+  nextQuestion,
+  getOwnAnswers,
   getScores,
 }
