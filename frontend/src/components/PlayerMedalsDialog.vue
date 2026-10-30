@@ -1,7 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { request } from '@/api'
-import { avatars } from '@/composables/useProfile'
+import { findAvatar } from '@/composables/useProfile'
+import AvatarIcon from '@/components/AvatarIcon.vue'
 import { MEDALS, medalImage } from '@/medals'
 
 // player: an entry from the leaderboard { id, name, avatar, ... }
@@ -12,7 +13,7 @@ const dialog = ref(null)
 const unlockedIds = ref(null)
 const error = ref('')
 
-const avatar = computed(() => avatars.find((item) => item.id === props.player.avatar) ?? null)
+const avatar = computed(() => findAvatar(props.player.avatar, props.player.avatarUrl))
 // In the same order as on the profile page
 const unlocked = computed(() => MEDALS.filter((medal) => unlockedIds.value?.includes(medal.id)))
 
@@ -50,7 +51,7 @@ onBeforeUnmount(() => dialog.value.close())
         <!-- PLAYER -->
         <div class="player-medals__header">
           <span class="player-medals__avatar" :style="avatar && { background: avatar.color }" aria-hidden="true">
-            {{ avatar?.emoji ?? player.name[0].toUpperCase() }}
+            <AvatarIcon :avatar="avatar" :fallback="player.name[0].toUpperCase()" />
           </span>
           <div>
             <h2 id="player-medals-title">{{ player.name }}</h2>

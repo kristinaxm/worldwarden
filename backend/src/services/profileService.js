@@ -1,10 +1,15 @@
 const { pool } = require('../db');
 
+// Same fields as the logged-in user from /api/auth/me, so the frontend keeps hasPassword
+// (GitHub accounts hide the email and password forms) after a profile change
 async function getById(userId) {
     const [rows] = await pool.execute(
-    'SELECT id, email, display_name, avatar, created_at FROM users WHERE id = ?', [userId],
+    `SELECT id, email, display_name, avatar, created_at AS createdAt,
+            github_avatar_url AS githubAvatarUrl, password_hash <> '' AS hasPassword
+     FROM users WHERE id = ?`, [userId],
   )
-    return rows[0] || null
+    if (!rows[0]) return null
+    return { ...rows[0], hasPassword: Boolean(rows[0].hasPassword) }
 }
 
 // changes: { display_name?, avatar? } – bara kolumnerna som finns med uppdateras.

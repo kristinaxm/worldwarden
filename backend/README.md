@@ -43,6 +43,8 @@ Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `BACKEND_ORIGIN` in `.env` fr
 
 GitHub accounts are stored in `users` like every other account, identified by `github_id`. A first GitHub login on an email that already has a password account links the two rows instead of creating a second one, so both ways in reach the same profile, XP and medals. GitHub accounts have an empty `password_hash` and can never be logged into with the password form. The callback ends in `createSession`, the same session as a password login, so every `requireUser` route works unchanged. Account settings follow from the empty password: `POST /api/profile/email` and `POST /api/profile/password` answer `400` for a GitHub account instead of verifying a password, and `DELETE /api/profile` confirms with the account's own email address rather than a password. `GET /api/auth/me` returns `hasPassword`, which the UI uses to hide the password forms. Password accounts are unaffected and still require their password for all three.
 
+The GitHub profile picture is saved in `github_avatar_url` at every GitHub login, so it stays up to date. `avatar = "github"` means the account shows that picture. It is the default for GitHub accounts and for linked accounts without an avatar, and an avatar the user has picked is never replaced. All user responses (`/me`, login and the profile endpoints) have the same fields, including `hasPassword` and `githubAvatarUrl`, so the UI keeps hiding the password forms after a profile change.
+
 Failures redirect to `FRONTEND_ORIGIN/?github=fel` instead of showing an API error. The link is a page navigation, so errors must redirect rather than return JSON, which would otherwise replace the app with a raw error body.
 
 ## Countries API
@@ -236,9 +238,9 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
   "totalPlayers": 27,
   "totalPages": 2,
   "entries": [
-    { "id": 3, "place": 1, "name": "Adam", "avatar": "panda", "isMe": false, "score": 10, "total": 10, "durationSeconds": 85, "completedAt": "..." }
+    { "id": 3, "place": 1, "name": "Adam", "avatar": "panda", "avatarUrl": null, "isMe": false, "score": 10, "total": 10, "durationSeconds": 85, "completedAt": "..." }
   ],
-  "me": { "id": 8, "place": 14, "name": "Emma", "avatar": null, "isMe": true, "score": 7, "total": 10, "durationSeconds": 60, "completedAt": "...", "page": 1 }
+  "me": { "id": 8, "place": 14, "name": "Emma", "avatar": "github", "avatarUrl": "https://avatars.githubusercontent.com/u/...", "isMe": true, "score": 7, "total": 10, "durationSeconds": 60, "completedAt": "...", "page": 1 }
 }
 ```
 
@@ -246,6 +248,7 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
 - XP board: most XP first. Difficulty boards: most correct first, then the fastest time.
 - Players with the same result share a `place` (1, 2, 2, 4). Same score and time: the one who got it first is shown above.
 - `name` is the display name, or `Spelare #<id>` if the player hasn't chosen one. The email is never sent, since guests can see the leaderboards too.
+- `avatarUrl` is the GitHub picture when `avatar` is `"github"`, otherwise `null`.
 - `me` is the logged-in player's own row and the `page` it is on. It is `null` for guests and for players who haven't played that board.
 - Errors: `404` for an unknown board, `400` for an invalid page.
 - A player's medals use the `id` from the leaderboard and are calculated like `GET /api/profile/medals`. Only players with a finished quiz (everyone on the leaderboards) can be looked up, others give `404`, so the endpoint can't be used to find out which user ids exist. `400` for an invalid id.
