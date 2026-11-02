@@ -3,7 +3,8 @@ import { computed, inject, nextTick, ref, watch } from 'vue'
 import { request } from '@/api'
 import PlayerMedalsDialog from '@/components/PlayerMedalsDialog.vue'
 import { useAuth } from '@/composables/useAuth'
-import { avatars } from '@/composables/useProfile'
+import { findAvatar } from '@/composables/useProfile'
+import AvatarIcon from '@/components/AvatarIcon.vue'
 
 // Tabs. The id is the board in GET /api/leaderboard/:board
 const BOARDS = [
@@ -72,7 +73,7 @@ async function closeMedals() {
 //#endregion
 
 function avatarFor(entry) {
-  return avatars.find((avatar) => avatar.id === entry.avatar) ?? null
+  return findAvatar(entry.avatar, entry.avatarUrl)
 }
 
 // Top 3 get gold, silver and bronze, 4–10 a light green background
@@ -173,7 +174,7 @@ function formatTime(totalSeconds) {
               :style="avatarFor(entry) && { background: avatarFor(entry).color }"
               aria-hidden="true"
             >
-              {{ avatarFor(entry)?.emoji ?? entry.name[0].toUpperCase() }}
+              <AvatarIcon :avatar="avatarFor(entry)" :fallback="entry.name[0].toUpperCase()" />
             </span>
             <strong :title="entry.name">{{ entry.name }}</strong>
             <span v-if="entry.isMe" class="player__you">Du</span>

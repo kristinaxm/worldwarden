@@ -6,7 +6,11 @@ const { calculateXp, levelForXp, xpSummary } = require('../xpLevels.js')
 const xpService = require('./xpService.js')
 const medalService = require('./medalService.js')
 
-const normalize = (value) => value?.trim().toLocaleLowerCase('sv-SE') ?? ''
+// Ignores case, surrounding whitespace and accents, so "bogota" matches "Bogotá".
+// å, ä and ö are separate letters in Swedish and are kept.
+const normalize = (value) => [...(value?.normalize('NFC').trim().toLocaleLowerCase('sv-SE') ?? '')]
+  .map((char) => ('åäö'.includes(char) ? char : char.normalize('NFD').replace(/\p{M}/gu, '')))
+  .join('')
 
 
 //#region Grading

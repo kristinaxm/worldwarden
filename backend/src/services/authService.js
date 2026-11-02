@@ -17,7 +17,7 @@ async function createUser(email, password) {
 
 async function getUserByEmail(email) {
   const [users] = await pool.execute(
-    'SELECT id, email, password_hash, display_name, avatar FROM users WHERE email = ?',
+    'SELECT id, email, password_hash, display_name, avatar, github_avatar_url FROM users WHERE email = ?',
     [email],
   )
   return users[0] || null
@@ -30,26 +30,36 @@ async function verifyPassword(user, password) {
 }
 
 // Finds the GitHub account, or links the GitHub id to an existing email account
+// avatarUrl is the GitHub profile picture. It is saved at every login so it stays up to date,
+// and becomes the avatar unless the user has already picked one.
 async function findOrCreateGithubUser(githubId, email, avatarUrl) {
+  const safeAvatarUrl = avatarUrl ?? null
+  const displayName = email?.split('@')[0] ?? null
+
   const [users] = await pool.execute(
     'SELECT id, email, display_name, avatar FROM users WHERE github_id = ?',
     [githubId],
   )
-  if (users[0]) return users[0]
+  if (users[0]) {
+    await pool.execute(
+      "UPDATE users SET github_avatar_url = ?, avatar = COALESCE(avatar, 'github') WHERE id = ?",
+      [safeAvatarUrl, users[0].id],
+    )
+    return users[0]
+  }
 
   const existing = await getUserByEmail(email)
   if (existing) {
     await pool.execute(
       "UPDATE users SET github_id = ?, github_avatar_url = ?, avatar = COALESCE(avatar, 'github') WHERE id = ?",
-      [githubId, avatarUrl, existing.id],
+      [githubId, safeAvatarUrl, existing.id],
     )
     return { id: existing.id, email: existing.email, display_name: existing.display_name, avatar: existing.avatar }
   }
 
-  const displayName = email?.split('@')[0] ?? null
   const [result] = await pool.execute(
     "INSERT INTO users (email, github_id, github_avatar_url, avatar, display_name) VALUES (?, ?, ?, 'github', ?)",
-    [email, githubId, avatarUrl, displayName],
+    [email, githubId, safeAvatarUrl, displayName],
   )
   return { id: result.insertId, email, display_name: displayName, avatar: 'github' }
 }

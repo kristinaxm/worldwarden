@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { avatars, useProfile } from '@/composables/useProfile'
+import { avatars, findAvatar, useProfile } from '@/composables/useProfile'
+import AvatarIcon from '@/components/AvatarIcon.vue'
 
 const { profile, updateProfile } = useProfile()
 const editing = ref(false)
@@ -12,8 +13,9 @@ const selectedAvatar = ref(null)
 
 // The avatar shown in the big circle: the chosen one while editing, otherwise the saved one
 const shownAvatar = computed(() =>
-  editing.value ? avatars.find((avatar) => avatar.id === selectedAvatar.value) : profile.value.avatar,
+  editing.value ? findAvatar(selectedAvatar.value, profile.value.githubAvatarUrl) : profile.value.avatar,
 )
+const githubAvatar = computed(() => findAvatar('github', profile.value.githubAvatarUrl))
 const initial = computed(() => (editing.value ? name.value : profile.value.displayName).trim()[0]?.toUpperCase() || '?')
 const memberSince = computed(() =>
   profile.value.createdAt
@@ -65,7 +67,7 @@ async function save() {
       :style="shownAvatar && { background: shownAvatar.color }"
       aria-hidden="true"
     >
-      {{ shownAvatar?.emoji ?? initial }}
+      <AvatarIcon :avatar="shownAvatar" :fallback="initial" />
     </div>
 
     <!-- VIEW -->
@@ -95,6 +97,18 @@ async function save() {
           :disabled="pending"
           @click="selectedAvatar = null"
         >{{ initial }}</button>
+        <!-- GitHub accounts can also use their profile picture from GitHub -->
+        <button
+          v-if="githubAvatar"
+          class="profile-info__choice profile-info__choice--image"
+          type="button"
+          role="radio"
+          :title="githubAvatar.label"
+          :aria-label="githubAvatar.label"
+          :aria-checked="selectedAvatar === 'github'"
+          :disabled="pending"
+          @click="selectedAvatar = 'github'"
+        ><AvatarIcon :avatar="githubAvatar" /></button>
         <button
           v-for="avatar in avatars"
           :key="avatar.id"
@@ -252,6 +266,11 @@ input[type='text'] {
   &[aria-checked='true'] {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+
+  &.profile-info__choice--image {
+    padding: 0;
+    overflow: hidden;
   }
 
   &.profile-info__choice--letter {

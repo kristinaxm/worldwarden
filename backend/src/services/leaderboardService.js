@@ -14,7 +14,7 @@ const DURATION_SQL = 'TIMESTAMPDIFF(SECOND, started_at, completed_at)'
 // order decides the place, tiebreak only the order between players who share a place.
 const XP_BOARD = {
   players: `
-    SELECT users.id, users.display_name, users.avatar,
+    SELECT users.id, users.display_name, users.avatar, users.github_avatar_url,
            SUM(quiz_attempts.xp) AS totalXp, COUNT(*) AS quizCount
     FROM quiz_attempts JOIN users ON users.id = quiz_attempts.user_id
     WHERE quiz_attempts.completed_at IS NOT NULL
@@ -32,7 +32,7 @@ const XP_BOARD = {
 // Same score and time: the one who got it first is shown above.
 const QUIZ_BOARD = {
   players: `
-    SELECT users.id, users.display_name, users.avatar,
+    SELECT users.id, users.display_name, users.avatar, users.github_avatar_url,
            best.score, best.total, best.durationSeconds, best.completedAt
     FROM (
       SELECT user_id, score, total_questions AS total, ${DURATION_SQL} AS durationSeconds,
@@ -77,6 +77,8 @@ function toEntry(board, row, userId) {
     place: Number(row.place),
     name: row.display_name || `Spelare #${row.id}`,
     avatar: row.avatar,
+    // Only sent when the player shows their GitHub picture
+    avatarUrl: row.avatar === 'github' ? row.github_avatar_url : null,
     isMe: row.id === userId,
     ...board.stats(row),
   }

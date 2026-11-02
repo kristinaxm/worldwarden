@@ -6,7 +6,8 @@ import Footer from '@/components/Footer.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
 import { useAuth } from '@/composables/useAuth'
 import { computed, nextTick, provide, ref, watch } from 'vue'
-import { avatars } from '@/composables/useProfile'
+import { findAvatar } from '@/composables/useProfile'
+import AvatarIcon from '@/components/AvatarIcon.vue'
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
@@ -15,7 +16,7 @@ const content = ref(null)
 const route = useRoute()
 const { user, pending, error, restore, logout } = useAuth()
 const userAvatar = computed(() => {
-  return avatars.find((a) => a.id === user.value?.avatar) ?? null
+  return findAvatar(user.value?.avatar, user.value?.githubAvatarUrl)
 })
 
 const displayName = computed(() => {
@@ -93,19 +94,15 @@ function closeMobileMenu() {
             <RouterLink :to="{ name: 'leaderboard' }" @click="closeMobileMenu">
               ♜ Topplistor
             </RouterLink>
-            <a href="#">
-              ◉ Kategorier
-            </a>
-            <a href="#">
-              ♧ Community
-            </a>
+            <RouterLink :to="{ name: 'about' }" @click="closeMobileMenu">
+              ♧ Om oss
+            </RouterLink>
           </nav>
           <div class="mobile-menu__divider"></div>
           <div class="mobile-menu__auth">
             <RouterLink v-if="user" :to="{ name: 'profile' }" class="mobile-menu__account" @click="closeMobileMenu">
               <div class="mobile-menu__avatar">
-              <span v-if="userAvatar">{{ userAvatar.emoji }}</span>
-              <span v-else>👤</span>
+              <AvatarIcon :avatar="userAvatar" fallback="👤" />
               </div>
               <span>{{ displayName }}<small>Visa profil</small></span>
             </RouterLink>
@@ -120,9 +117,9 @@ function closeMobileMenu() {
             </button>
           </div>
           <div class="mobile-menu__footer">
-            <a href="#">Hjälp</a>
-            <a href="#">Integritetspolicy</a>
-            <a href="#">Användarvillkor </a>
+            <RouterLink :to="{ name: 'help' }" @click="closeMobileMenu">Hjälp</RouterLink>
+            <RouterLink :to="{ name: 'privacy' }" @click="closeMobileMenu">Integritetspolicy</RouterLink>
+            <RouterLink :to="{ name: 'terms' }" @click="closeMobileMenu">Användarvillkor</RouterLink>
           </div>
         </div>
       </div>

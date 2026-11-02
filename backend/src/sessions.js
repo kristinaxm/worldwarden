@@ -47,7 +47,7 @@ async function findSessionUser(req) {
 
   const [users] = await pool.execute(
   `SELECT users.id, users.email, users.display_name, users.avatar, users.created_at AS createdAt,
-    users.password_hash <> '' AS hasPassword
+    users.github_avatar_url AS githubAvatarUrl, users.password_hash <> '' AS hasPassword
   FROM sessions JOIN users ON users.id = sessions.user_id
   WHERE sessions.token_hash = ? AND sessions.expires_at > UTC_TIMESTAMP()`,
     [hash],
