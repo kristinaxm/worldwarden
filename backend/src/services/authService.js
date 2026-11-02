@@ -30,7 +30,7 @@ async function verifyPassword(user, password) {
 }
 
 // Finds the GitHub account, or links the GitHub id to an existing email account
-async function findOrCreateGithubUser(githubId, email) {
+async function findOrCreateGithubUser(githubId, email, avatarUrl) {
   const [users] = await pool.execute(
     'SELECT id, email, display_name, avatar FROM users WHERE github_id = ?',
     [githubId],
@@ -39,15 +39,19 @@ async function findOrCreateGithubUser(githubId, email) {
 
   const existing = await getUserByEmail(email)
   if (existing) {
-    await pool.execute('UPDATE users SET github_id = ? WHERE id = ?', [githubId, existing.id])
+    await pool.execute(
+      "UPDATE users SET github_id = ?, github_avatar_url = ?, avatar = COALESCE(avatar, 'github') WHERE id = ?",
+      [githubId, avatarUrl, existing.id],
+    )
     return { id: existing.id, email: existing.email, display_name: existing.display_name, avatar: existing.avatar }
   }
 
+  const displayName = email?.split('@')[0] ?? null
   const [result] = await pool.execute(
-    'INSERT INTO users (email, github_id, display_name) VALUES (?, ?, ?)',
-    [email, githubId],
+    "INSERT INTO users (email, github_id, github_avatar_url, avatar, display_name) VALUES (?, ?, ?, 'github', ?)",
+    [email, githubId, avatarUrl, displayName],
   )
-  return { id: result.insertId, email, display_name: displayName, avatar: null }
+  return { id: result.insertId, email, display_name: displayName, avatar: 'github' }
 }
 
 async function deleteSession(hash) {
