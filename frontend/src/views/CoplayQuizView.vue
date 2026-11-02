@@ -35,6 +35,10 @@ const isExpert = computed(() => difficulty.value === 'expert')
 const isTyped = computed(() => ['advanced', 'expert'].includes(difficulty.value))
 const flagUrl = computed(() => (question.value ? `https://flagcdn.com/w640/${question.value.flagCode}.png` : ''))
 const isLast = computed(() => current.value >= questions.value.length)
+const answeredPercent = computed(() =>
+  playerCount.value ? Math.round((answeredCount.value / playerCount.value) * 100) : 0,
+)
+const allAnswered = computed(() => playerCount.value > 0 && answeredCount.value >= playerCount.value)
 
 function stopPolling() {
   clearInterval(statePoll)
@@ -190,10 +194,21 @@ onMounted(async () => {
     <div v-else-if="question" class="cq__question">
       <header class="cq__top">
         <span>Fråga {{ current }} av {{ questions.length }}</span>
-        <span class="cq__answered" :title="'Så många har svarat på den här frågan'">
-          {{ answeredCount }}/{{ playerCount }} har svarat
-        </span>
       </header>
+
+      <!-- Fylls i grönt för varje spelare som svarat, och blir helgrön när alla svarat -->
+      <div
+        class="cq__progress"
+        :class="{ 'cq__progress--done': allAnswered }"
+        role="progressbar"
+        :aria-valuenow="answeredCount"
+        aria-valuemin="0"
+        :aria-valuemax="playerCount"
+        :aria-label="`${answeredCount} av ${playerCount} har svarat`"
+      >
+        <div class="cq__progress-fill" :style="{ width: `${answeredPercent}%` }"></div>
+        <span class="cq__progress-text">{{ answeredCount }}/{{ playerCount }} har svarat</span>
+      </div>
 
       <img class="cq__flag" :src="flagUrl" alt="Flagga" />
 
@@ -260,12 +275,51 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-.cq__answered {
-  padding: 6px 12px;
+.cq__progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface-soft);
+}
+
+.cq__progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--color-success);
+  transition: width 0.3s ease;
+}
+
+.cq__progress-text {
+  position: relative;
+  color: var(--color-text);
+  font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  /* Texten ligger mitt i stapeln och hamnar därför delvis ovanpå den gröna
+     fyllningen. Konturen gör den läsbar mot båda bakgrunderna. */
+  text-shadow:
+    0 0 3px var(--color-surface-soft),
+    0 0 3px var(--color-surface-soft),
+    0 0 4px var(--color-surface-soft);
+}
+
+/* Alla har svarat: hela stapeln grön, med vit text ovanpå */
+.cq__progress--done .cq__progress-text {
+  color: white;
+  text-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cq__progress-fill {
+    transition: none;
+  }
 }
 
 .cq__flag {
