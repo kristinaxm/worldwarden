@@ -5,6 +5,10 @@ import ProfileView from '@/views/ProfileView.vue'
 import ResultsView from '@/views/ResultsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
+import AboutView from '@/views/AboutView.vue'
+import HelpView from '@/views/HelpView.vue'
+import PrivacyView from '@/views/PrivacyView.vue'
+import TermsView from '@/views/TermsView.vue'
 import CoplayLobbyView from '@/views/CoplayLobbyView.vue'
 import CoplayQuizView from '@/views/CoplayQuizView.vue'
 import QuizView from "@/views/QuizView.vue";
@@ -34,6 +38,26 @@ const router = createRouter({
           path: 'topplistor',
           name: 'leaderboard',
           component: LeaderboardView,
+        },
+        {
+          path: 'om-oss',
+          name: 'about',
+          component: AboutView,
+        },
+        {
+          path: 'hjalp',
+          name: 'help',
+          component: HelpView,
+        },
+        {
+          path: 'integritetspolicy',
+          name: 'privacy',
+          component: PrivacyView,
+        },
+        {
+          path: 'anvandarvillkor',
+          name: 'terms',
+          component: TermsView,
         },
         {
           path: 'installningar',

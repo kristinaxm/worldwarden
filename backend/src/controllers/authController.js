@@ -52,7 +52,9 @@ function credentials(req, res, next) {
                 id: user.id, 
                 email: user.email,
                 display_name: user.display_name,
-                avatar: user.avatar, }, 
+                avatar: user.avatar,
+                githubAvatarUrl: user.github_avatar_url,
+                hasPassword: true, }, 
             })
         }
 
@@ -106,7 +108,10 @@ function credentials(req, res, next) {
             }
             if (!profile.id || !email) return res.redirect(`${frontendOrigin}/?github=fel`)
 
-            const user = await authService.findOrCreateGithubUser(String(profile.id), email.toLowerCase())
+            // Only GitHub's own image host, so the URL can't point anywhere else
+            const avatarUrl = typeof profile.avatar_url === 'string' && profile.avatar_url.length <= 255 &&
+                profile.avatar_url.startsWith('https://avatars.githubusercontent.com/') ? profile.avatar_url : null
+            const user = await authService.findOrCreateGithubUser(String(profile.id), email.toLowerCase(), avatarUrl)
             await createSession(req, res, user.id)
             res.redirect(frontendOrigin)
         }

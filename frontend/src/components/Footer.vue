@@ -4,9 +4,9 @@ defineOptions({ name: 'AppFooter' })
 
 <template>
   <footer class="footer">
-    <a href="#">Hjälp</a>
-    <a href="#">Integritetspolicy</a>
-    <a href="#">Användarvillkor </a>
+    <RouterLink :to="{ name: 'help' }">Hjälp</RouterLink>
+    <RouterLink :to="{ name: 'privacy' }">Integritetspolicy</RouterLink>
+    <RouterLink :to="{ name: 'terms' }">Användarvillkor</RouterLink>
   </footer>
 </template>
 
