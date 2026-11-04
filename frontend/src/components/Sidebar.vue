@@ -70,6 +70,7 @@ const displayName = computed(() => {
           <div class="sidebar__avatar">👤</div>
           <span class="sidebar__user-name">Gäst</span>
         </div>
+        <span v-if="!user" class="sidebar__settings" aria-hidden="true" style="visibility: hidden;">⚙</span>
         </div>
 
         <!-- NAVIGATION -->
@@ -424,6 +425,7 @@ const displayName = computed(() => {
 
       .sidebar__settings {
         margin-left: 0;
+        display: none;
       }
 
     }
