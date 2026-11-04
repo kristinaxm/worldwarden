@@ -1,5 +1,7 @@
 # worldwarden
 
+WorldWarden är ett geografiquiz: lär dig världen, ett quiz i taget. Man testar sig på flaggor, kontinenter, länder och huvudstäder i fyra svårighetsnivåer, samlar XP och medaljer, tävlar på topplistor och kan spela samma quiz tillsammans med klassen.
+
 - `frontend/` – Vue 3 + Vite
 - `backend/` – Node + Express 5 + MySQL (mysql2)
 - `docker-compose.yml` – MySQL för lokal utveckling
@@ -31,7 +33,7 @@ npm run dev
 
 Testa att backend når databasen: `GET http://localhost:3000/api/health`
 
-Backendens autentisering och API beskrivs i [backend/README.md](backend/README.md).
+Backendens autentisering och API beskrivs i [backend/README.md](backend/README.md). Steg för steg, GitHub-inloggning och felsökning finns i [GUIDE.md](GUIDE.md).
 
 ## Dela appen med klassen
 
@@ -42,4 +44,4 @@ Appen kan delas via en publik länk med Cloudflare Quick Tunnel, medan allt kör
 cloudflared tunnel --url http://localhost:5173
 ```
 
-Skriv in adressen som visas som `FRONTEND_ORIGIN` i `backend/.env` och dela länken. Installation, felsökning och vad du ska göra efter demon finns i [GUIDE.md](GUIDE.md#dela-appen-med-klassen-cloudflare-quick-tunnel).
+Skriv in adressen som visas som `FRONTEND_ORIGIN` och `BACKEND_ORIGIN` i `backend/.env` och dela länken. För GitHub-inloggning via länken läggs adressen också till som Redirect URI i GitHub-appen. Installation, felsökning och vad du ska göra efter demon finns i [GUIDE.md](GUIDE.md#dela-appen-med-klassen-cloudflare-quick-tunnel).
