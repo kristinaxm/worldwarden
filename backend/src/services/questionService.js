@@ -119,7 +119,7 @@ async function saveAttempt(userId, difficulty, countries) {
 //#region Create quiz
 // Creates a new quiz with 10 random, unique countries.
 // user is null for guests – then nothing is saved and attemptId is null.
-async function createQuiz(difficulty, user) {
+async function buildQuiz(difficulty) {
   const allCountries = await countryService.getAll()
 
   if (allCountries.length < QUESTIONS_PER_QUIZ) {
@@ -131,6 +131,12 @@ async function createQuiz(difficulty, user) {
   const questions = pickedCountries.map((country, index) =>
     buildQuestion(LEVELS[difficulty], country, allCountries, index + 1, difficulty),
   )
+
+  return { pickedCountries, questions }
+}
+
+async function createQuiz(difficulty, user) {
+  const { pickedCountries, questions } = await buildQuiz(difficulty)
 
   const attemptId = user ? await saveAttempt(user.id, difficulty, pickedCountries) : null
 
@@ -180,6 +186,8 @@ async function useHint(userId, attemptId, number) {
 
 
 module.exports = {
+  buildQuiz,
+  saveAttempt,
   createQuiz,
   useHint,
 }

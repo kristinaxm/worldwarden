@@ -88,6 +88,10 @@ const displayName = computed(() => {
             <span class="sidebar__icon">♜</span>
             <span class="sidebar__text">Topplistor</span>
           </RouterLink>
+          <RouterLink :to="{ name: 'coplay' }" class="sidebar__link" title="Spela tillsammans">
+            <span class="sidebar__icon">♟</span>
+            <span class="sidebar__text">Spela tillsammans</span>
+          </RouterLink>
           <RouterLink :to="{ name: 'about' }" class="sidebar__link" title="Om oss">
             <span class="sidebar__icon">♧</span>
             <span class="sidebar__text">Om oss</span>

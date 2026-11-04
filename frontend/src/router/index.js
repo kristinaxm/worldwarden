@@ -9,6 +9,8 @@ import AboutView from '@/views/AboutView.vue'
 import HelpView from '@/views/HelpView.vue'
 import PrivacyView from '@/views/PrivacyView.vue'
 import TermsView from '@/views/TermsView.vue'
+import CoplayLobbyView from '@/views/CoplayLobbyView.vue'
+import CoplayQuizView from '@/views/CoplayQuizView.vue'
 import QuizView from "@/views/QuizView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,12 +64,22 @@ const router = createRouter({
           name: 'settings',
           component: SettingsView,
         },
+        {
+          path: 'tillsammans',
+          name: 'coplay',
+          component: CoplayLobbyView,
+        },
       ],
     },
     {
       path: '/quiz/:difficulty',
       name: 'quiz',
       component: QuizView
+    },
+    {
+      path: '/tillsammans/:code',
+      name: 'coplay-quiz',
+      component: CoplayQuizView
     }
   ],
 })
