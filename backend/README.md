@@ -23,25 +23,25 @@ All POST requests require `Content-Type: application/json`. Errors have the shap
 
 | Method | Path | Body | Success |
 | --- | --- | --- | --- |
-| POST | `/api/auth/signup` | `{ "email": "player@example.com", "password": "a long example passphrase 1!" }` | `201` with `{ "user": { "id": 1, "email": "player@example.com" } }` |
+| POST | `/api/auth/signup` | `{ "email": "player@example.com", "password": "a long example passphrase 1!" }` | `201` with `{ "user": { "id": 1, "email": "player@example.com", "display_name": "player" } }` |
 | POST | `/api/auth/login` | Email and password | `200` with the user and a session cookie |
 | GET | `/api/auth/github` | None | `302` to GitHub's consent page |
 | GET | `/api/auth/github/callback` | None | `302` to the frontend with a session cookie |
-| GET | `/api/auth/me` | None | `200` with `{ "user": { "id": 1, "email": "player@example.com", "createdAt": "..." } }` |
+| GET | `/api/auth/me` | None | `200` with `{ "user": { "id": 1, "email": "player@example.com", "display_name": "player", "avatar": "panda", "createdAt": "...", "githubAvatarUrl": null, "hasPassword": true } }` |
 | POST | `/api/auth/logout` | `{}` | `204`, revokes the current session and clears its cookie |
 | GET | `/api/health` | None | `200` with `{ "status": "ok", "db": "connected" }` |
 
-Signup creates an account without logging in. Email addresses use ASCII, are trimmed and lowercased, and are unique. Provider-specific aliases such as dots and plus tags are preserved. New passwords contain 5–128 Unicode code points, at least one digit (0–9), and at least one punctuation or symbol character, such as `!` or `#`. Whitespace is preserved but does not count as a symbol. Login accepts existing passwords without imposing the new registration rules. Unknown input fields are ignored.
+Signup creates an account without logging in. The display name starts as the part of the email before `@` and can be changed in the profile. Email addresses use ASCII, are trimmed and lowercased, and are unique. Provider-specific aliases such as dots and plus tags are preserved. New passwords contain 5–128 Unicode code points, at least one digit (0–9), and at least one punctuation or symbol character, such as `!` or `#`. Whitespace is preserved but does not count as a symbol. Login accepts existing passwords without imposing the new registration rules. Unknown input fields are ignored.
 
 Invalid input returns `400`. Invalid credentials and missing or expired sessions return `401`. Disallowed origins return `403`, duplicate emails `409`, oversized bodies `413`, non-JSON writes `415`, and excessive attempts `429`. Unexpected failures return a generic `500`. Duplicate signup responses reveal whether an email is registered; login failures use the same response for unknown emails and incorrect passwords.
 
 ## GitHub login (OAuth2)
 
-Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `BACKEND_ORIGIN` in `.env` from an OAuth App on github.com, with the callback URL `BACKEND_ORIGIN` + `/api/auth/github/callback`. One OAuth App serves the whole team, since the callback resolves to each developer's own machine. Without a client id the rest of the API works unconfigured and `/api/auth/github` redirects to `FRONTEND_ORIGIN/?github=saknas`, which the UI shows as a missing-configuration message. The keys are read once at startup, so restart the API after adding them.
+Set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `BACKEND_ORIGIN` in `.env` from an OAuth App on github.com, with the redirect URI `BACKEND_ORIGIN` + `/api/auth/github/callback`. One OAuth App serves the whole team, since the redirect URI resolves to each developer's own machine. An OAuth App accepts several redirect URIs, so a tunnel address can be added next to the localhost one for a demo (see [GUIDE.md](../GUIDE.md#dela-appen-med-klassen-cloudflare-quick-tunnel)). Without a client id the rest of the API works unconfigured and `/api/auth/github` redirects to `FRONTEND_ORIGIN/?github=saknas`, which the UI shows as a missing-configuration message. The keys are read once at startup, so restart the API after adding them.
 
 `GET /api/auth/github` must be a normal browser navigation, not `fetch`. It stores a random `state` in a short-lived cookie and redirects to GitHub. The callback rejects a missing or mismatched `state`, exchanges the code for a token, and reads the account's id and verified primary email (`read:user user:email`), since the public profile email can be hidden.
 
-GitHub accounts are stored in `users` like every other account, identified by `github_id`. A first GitHub login on an email that already has a password account links the two rows instead of creating a second one, so both ways in reach the same profile, XP and medals. GitHub accounts have an empty `password_hash` and can never be logged into with the password form. The callback ends in `createSession`, the same session as a password login, so every `requireUser` route works unchanged. Account settings follow from the empty password: `POST /api/profile/email` and `POST /api/profile/password` answer `400` for a GitHub account instead of verifying a password, and `DELETE /api/profile` confirms with the account's own email address rather than a password. `GET /api/auth/me` returns `hasPassword`, which the UI uses to hide the password forms. Password accounts are unaffected and still require their password for all three.
+GitHub accounts are stored in `users` like every other account, identified by `github_id`. A new GitHub account gets the part of its email before `@` as display name. A first GitHub login on an email that already has a password account links the two rows instead of creating a second one, so both ways in reach the same profile, XP and medals. GitHub accounts have an empty `password_hash` and can never be logged into with the password form. The callback ends in `createSession`, the same session as a password login, so every `requireUser` route works unchanged. Account settings follow from the empty password: `POST /api/profile/email` and `POST /api/profile/password` answer `400` for a GitHub account instead of verifying a password, and `DELETE /api/profile` confirms with the account's own email address rather than a password. `GET /api/auth/me` returns `hasPassword`, which the UI uses to hide the password forms. Password accounts are unaffected and still require their password for all three.
 
 The GitHub profile picture is saved in `github_avatar_url` at every GitHub login, so it stays up to date. `avatar = "github"` means the account shows that picture. It is the default for GitHub accounts and for linked accounts without an avatar, and an avatar the user has picked is never replaced. All user responses (`/me`, login and the profile endpoints) have the same fields, including `hasPassword` and `githubAvatarUrl`, so the UI keeps hiding the password forms after a profile change.
 
@@ -56,14 +56,29 @@ Failures redirect to `FRONTEND_ORIGIN/?github=fel` instead of showing an API err
 
 A country looks like `{ "id": 1, "code": "SE", "name": "Sverige", "capital": "Stockholm", "continent": "Europa" }`. The countries are added and changed by migrations only, so the API is read-only.
 
+## Profile API
+
+All routes require a logged in user and change only that user's own account.
+
+| Method | Path | Body | Success |
+| --- | --- | --- | --- |
+| PATCH | `/api/profile` | `{ "displayName": "Kristina", "avatar": "panda" }` | `200` with the user. Only the fields that are sent are changed |
+| POST | `/api/profile/email` | `{ "email": "new@example.com", "password": "..." }` | `200` with the user |
+| POST | `/api/profile/password` | `{ "currentPassword": "...", "newPassword": "..." }` | `200`, and every other session of the account is logged out |
+| DELETE | `/api/profile` | `{ "password": "..." }`, or `{ "email": "..." }` for a GitHub account | `204`, the account and all its data are deleted and the cookie is cleared |
+
+- `displayName` is at most 50 characters and `avatar` is an avatar id such as `"panda"`, or `"github"` for the GitHub picture. A request with neither returns `400`.
+- A new password follows the signup rules. A wrong password returns `401`, an invalid email `400` and an email that is already registered `409`.
+- GitHub accounts have no password, so changing email or password returns `400` and deleting the account is confirmed with the account's own email.
+
 ## Quiz API
 
 A quiz is played in three requests. `beginner`, `medium`, `advanced`, and `expert` are supported; unknown difficulties return `400 Unknown difficulty`. Existing XP requirements apply when starting and submitting quizzes.
 
 | Level | Question | Answer field in `POST /api/results` | Correct answer |
 | --- | --- | --- | --- |
-| `beginner` | Flag + 2 country names | `country` | The country's name |
-| `medium` | Flag + 4 capitals | `capital` | The country's capital |
+| `beginner` | Flag + 2 continents | `country` | The country's continent |
+| `medium` | Flag + 4 country names | `country` | The country's name |
 | `advanced` | Flag + country text field | `country` | The country's name, ignoring case, surrounding whitespace and accents |
 | `expert` | Flag + country and capital text fields | `country`, `capital` | Both answers must match, ignoring case, surrounding whitespace and accents |
 
@@ -77,6 +92,9 @@ Everything that differs between levels is configured in `src/quizLevels.js`. The
 | GET | `/api/results?difficulty=beginner` | Logged in | `200` with completed quizzes and their answers, newest first |
 | POST | `/api/questions` | Everyone | `201` with 10 questions. Logged in users also get a saved attempt |
 | POST | `/api/results` | Everyone | `200` with the graded answers. Saved only for logged in users |
+| DELETE | `/api/results/:id` | Logged in | `204`, deletes the player's own unfinished quiz when it is abandoned. `404` if it doesn't exist, is finished or belongs to another user |
+
+Unfinished quizzes that are older than one day are also deleted every hour, so abandoned quizzes don't stay in the database.
 
 Guests can play `beginner` and get their answers graded, but nothing is saved for them and they collect no XP. For logged in users the session cookie decides who the quiz belongs to.
 
@@ -91,25 +109,25 @@ Result history requires a supported difficulty (`beginner`, `medium`, `advanced`
   "attemptId": 42,
   "difficulty": "beginner",
   "questions": [
-    { "number": 1, "flagCode": "se", "options": ["Norge", "Sverige"] }
+    { "number": 1, "flagCode": "se", "options": ["Asien", "Europa"] }
   ]
 }
 ```
 
-Every quiz has 10 unique countries. The options are shuffled and the wrong ones come from the same continent when possible. A beginner question has 2 country names, a medium question 4 capitals (e.g. `["Oslo", "Stockholm", "Köpenhamn", "Helsingfors"]`). The correct answer is never sent. Flags are loaded from `https://flagcdn.com/w640/${flagCode}.png`.
+Every quiz has 10 unique countries. The options are shuffled and the wrong ones come from the same continent when possible. A beginner question has 2 continents, a medium question 4 country names (e.g. `["Norge", "Sverige", "Danmark", "Finland"]`). Advanced and expert questions have no options, since the answer is typed. The correct answer is never sent. Flags are loaded from `https://flagcdn.com/w640/${flagCode}.png`.
 
 `attemptId` is `null` for guests. For logged in users the quiz is saved in `quiz_attempts` and `quiz_answers`, and the time starts now.
 
 ### Submit the answers
 
-`POST /api/results` with one answer per question. The answer field is `country` for beginner and `capital` for medium. It holds the chosen option, or `null` if the question was skipped:
+`POST /api/results` with one answer per question. The answer field is `country` on every level. It holds the chosen option or the typed answer, or `null` if the question was skipped:
 
 ```json
 {
   "attemptId": 42,
   "difficulty": "beginner",
   "answers": [
-    { "number": 1, "flagCode": "se", "country": "Sverige" },
+    { "number": 1, "flagCode": "se", "country": "Europa" },
     { "number": 2, "flagCode": "jp", "country": null }
   ]
 }
@@ -126,12 +144,12 @@ Response:
   "newHighscore": true,
   "previousBest": { "score": 7, "total": 10, "durationSeconds": 90 },
   "answers": [
-    { "number": 1, "flagCode": "se", "answer": "Sverige", "correct": true, "correctAnswer": "Sverige" }
+    { "number": 1, "flagCode": "se", "answer": "Europa", "correct": true, "correctAnswer": "Europa" }
   ]
 }
 ```
 
-- Medium answers look like `{ "number": 1, "flagCode": "se", "capital": "Stockholm" }`, and `answer` / `correctAnswer` in the response are capitals. Sending the wrong field for the level returns `400`.
+- Beginner answers and `correctAnswer` are continents, medium, advanced and expert answers are country names.
 - Expert also requires `capital` on every submitted answer (`null` when skipped). Submission and history responses include `capitalAnswer` and `correctCapital` alongside the country answer. Both submitted answers are stored in `quiz_answers`.
 - Logged in users are graded against the countries saved when the quiz started, not the flag codes in the request. The time is calculated by the database.
 - Each level has its own highscore and stats.
@@ -243,7 +261,7 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
 - A higher score also unlocks the lower tiers, so 10/10 gives bronze, silver and gold at once.
 - Like XP, medals are never stored. They are calculated from the finished quizzes in `quiz_attempts`, so quizzes played before medals existed count too.
 - The rules live in `src/medals.js`. The ids must match `frontend/src/medals.js`, which also holds the names, requirement texts and images.
-- Only quizzes with at least half correct (5 of 10) count towards the `quiz-completed-*` medals. Quizzes with fewer correct answers are still saved and   award XP, but do not count towards these medals.
+- Only quizzes with at least half correct (5 of 10) count towards the `quiz-completed-*` medals. Quizzes with fewer correct answers are still saved and award XP, but do not count towards these medals.
 
 ## Leaderboards
 
@@ -272,7 +290,7 @@ A level gets hints by adding `hint: (country) => ...` to its entry in `src/quizL
 - Only finished quizzes count, and every player is shown once per board with their best result.
 - XP board: most XP first. Difficulty boards: most correct first, then the fastest time.
 - Players with the same result share a `place` (1, 2, 2, 4). Same score and time: the one who got it first is shown above.
-- `name` is the display name, or `Spelare #<id>` if the player hasn't chosen one. The email is never sent, since guests can see the leaderboards too.
+- `name` is the display name. New accounts get one automatically, so `Spelare #<id>` is only shown for older accounts that have no display name. The email is never sent, since guests can see the leaderboards too.
 - `avatarUrl` is the GitHub picture when `avatar` is `"github"`, otherwise `null`.
 - `me` is the logged-in player's own row and the `page` it is on. It is `null` for guests and for players who haven't played that board.
 - Errors: `404` for an unknown board, `400` for an invalid page.
@@ -296,7 +314,7 @@ Origin checks, JSON-only writes and SameSite cookies protect state-changing brow
 
 Use `NODE_ENV=production` with HTTPS when deploying. Production cookies use `Secure` and the `__Host-session` name. Development uses `session` over local HTTP. The API and migrations connect as the `worldwarden` application user, which only has access to the `worldwarden` database. The Compose database has a random root password nobody needs, and it only listens on `127.0.0.1`, so it can't be reached from the network.
 
-Registration and login share a limit of 20 requests per IP per 15 minutes. Login additionally permits 10 failed attempts per normalized email per 15 minutes. Limits use process memory and reset on restart. This setup targets one API process with direct client connections; shared limiting and explicit proxy trust configuration are needed when scaling or deploying behind a proxy.
+Registration and login share a limit of 20 requests per IP per 15 minutes. Login additionally permits 10 failed attempts per normalized email per 15 minutes. Limits use process memory and reset on restart. The API trusts the forwarded client address only from the same machine (`trust proxy` set to `loopback`), so behind the Vite proxy and a Cloudflare tunnel every player is limited by their own IP instead of sharing one limit. Shared limiting is needed when scaling to several API processes.
 
-Email verification, password reset, password changes and profile editing are not included. Account data currently consists of the email address and creation/update timestamps.
+Email verification and password reset are not included. An account stores the email address, the password hash (empty for GitHub accounts), display name, avatar, GitHub id and picture, and creation/update timestamps.
 

@@ -49,7 +49,7 @@ Inloggning med GitHub behöver en OAuth App på github.com. Har någon i gruppen
 
 1. github.com → Settings → Developer settings → OAuth Apps → New OAuth App
 2. Homepage URL: `http://localhost:5173`
-3. Authorization callback URL: `http://localhost:3000/api/auth/github/callback`
+3. Authorization callback URL (kallas Redirect URI i appens inställningar): `http://localhost:3000/api/auth/github/callback`
 4. Skriv in `GITHUB_CLIENT_ID` och `GITHUB_CLIENT_SECRET` i `backend/.env`
 
 Hela gruppen kan dela på **en** OAuth App. Callback-adressen pekar på `localhost`, alltså varje persons egen dator, så samma app fungerar för alla samtidigt. Be den som skapade appen om `GITHUB_CLIENT_ID` och `GITHUB_CLIENT_SECRET` och klistra in dem i din egen `backend/.env`. Skicka dem aldrig via git eller en publik kanal.
@@ -146,20 +146,28 @@ Kontrollera installationen med `cloudflared --version` (eller hela sökvägen ov
    cloudflared tunnel --url http://localhost:5173
    ```
 
-3. Efter några sekunder står adressen i en ruta, till exempel `https://ord-ord-ord.trycloudflare.com`. Skriv in den i `backend/.env`:
+3. Efter några sekunder står adressen i en ruta, till exempel `https://ord-ord-ord.trycloudflare.com`. Skriv in den på två rader i `backend/.env`:
 
    ```sh
    FRONTEND_ORIGIN=https://ord-ord-ord.trycloudflare.com
+   BACKEND_ORIGIN=https://ord-ord-ord.trycloudflare.com
    ```
 
    Backend startar om av sig själv när `.env` ändras.
 
-4. Öppna länken själv och testa att logga in. Dela den sedan med klassen, gärna som QR-kod.
+4. För GitHub-inloggning via länken: öppna din OAuth App på github.com och lägg till tunneladressen som en **extra** Redirect URI, till exempel `https://ord-ord-ord.trycloudflare.com/api/auth/github/callback`. Behåll localhost-raden och bocka inte i "Allow wildcard matching". Hoppar du över det fungerar inloggning med e-post ändå.
+
+5. Öppna länken själv och testa att logga in. Dela den sedan med klassen, gärna som QR-kod:
+
+   ```sh
+   npx qrcode-terminal https://ord-ord-ord.trycloudflare.com
+   ```
 
 ### När demon är slut
 
 1. `Ctrl+C` i tunnelns terminal. Länken slutar fungera direkt.
-2. Sätt tillbaka `FRONTEND_ORIGIN=http://localhost:5173` i `backend/.env`.
+2. Sätt tillbaka `FRONTEND_ORIGIN=http://localhost:5173` och `BACKEND_ORIGIN=http://localhost:3000` i `backend/.env`.
+3. Ta bort tunnelraden bland Redirect URIs i GitHub-appen. Localhost-raden ska vara kvar.
 
 ### Att tänka på
 
@@ -174,7 +182,8 @@ Demon körs från en dator, och det kan vara vems som helst. Den som kör den be
 
 - `cloudflared` installerat (se ovan)
 - senaste `main` med `npm install` och `npm run migrate` körda
-- sin egen `backend/.env` med tunneladressen som `FRONTEND_ORIGIN`
+- sin egen `backend/.env` med tunneladressen som `FRONTEND_ORIGIN` och `BACKEND_ORIGIN`
+- för GitHub-inloggning: tunneladressen som Redirect URI i den OAuth App vars nycklar står i `backend/.env`
 
 Alla konton, resultat, XP och medaljer sparas i databasen på den datorn. Konton som skapats hos någon annan finns inte där, så klassen registrerar sig på nytt hos den som kör demon. Testa länken på den datorn innan demon.
 
@@ -186,6 +195,8 @@ Alla konton, resultat, XP och medaljer sparas i databasen på den datorn. Konton
 | `Blocked request. This host is not allowed` | Frontend startades innan `allowedHosts` fanns i `vite.config.js`. Starta om frontend. |
 | Inloggning ger "Något gick fel" eller `403` | `FRONTEND_ORIGIN` i `backend/.env` är inte exakt tunneladressen (`https://`, inget `/` på slutet). |
 | `502 Bad Gateway` | Frontend körs inte på port 5173. Starta den med `npm run dev` i `frontend/`. |
+| GitHub visar ett fel om `redirect_uri` | Tunneladressen saknas bland Redirect URIs i GitHub-appen, eller `BACKEND_ORIGIN` i `backend/.env` är inte tunneladressen. |
+| Backend eller tunneln stängs av mitt i demon | Datorn har ont om minne. Stäng andra program och kör backend och tunneln i egna terminaler. |
 
 ## Databasanslutning (IntelliJ)
 
