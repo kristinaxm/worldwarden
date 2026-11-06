@@ -30,10 +30,9 @@ async function join(req, res) {
   const code = validCode(req, res)
   if (!code) return
 
-  const room = await coplayService.joinRoom(req.user, code)
-  // The difficulty has to be unlocked for the joining player too
-  await xpService.assertCanPlay(req.user, room.difficulty)
-  res.json(room)
+  // Nivån behöver inte vara upplåst för den som går med: värden har redan
+  // låst upp den, och alla i rummet spelar samma frågor
+  res.json(await coplayService.joinRoom(req.user, code))
 }
 
 // GET /api/coplay/:code – lobby: who has joined and has the host started

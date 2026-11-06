@@ -209,6 +209,16 @@ async function getOwnAnswers(user, code) {
   return rows
 }
 
+// Ett co-play-försök som tillhör spelaren. Resultatet får då lämnas in även om
+// nivån är låst för spelaren själv: det är värdens rum som avgör nivån.
+async function isOwnCoplayAttempt(userId, attemptId) {
+  const [rows] = await pool.execute(
+    'SELECT 1 FROM coplay_players WHERE user_id = ? AND attempt_id = ?',
+    [userId, attemptId],
+  )
+  return rows.length > 0
+}
+
 // Scoreboard: everyone's score, ranked. Same order as a highscore: most correct, then fastest.
 async function getScores(user, code) {
   const room = await findRoom(code)
@@ -250,6 +260,7 @@ async function getScores(user, code) {
 }
 
 module.exports = {
+  isOwnCoplayAttempt,
   createRoom,
   joinRoom,
   getLobby,
