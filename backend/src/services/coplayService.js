@@ -196,6 +196,22 @@ async function nextQuestion(user, code) {
   return { currentQuestion: next, finished: next > questions.length }
 }
 
+// Värden avslutar spelet för alla: rummet ställs efter sista frågan, så alla
+// som pollar får finished och lämnar in det de hunnit svara på.
+async function endRoom(user, code) {
+  const room = await findRoom(code)
+  if (!room) throw httpError(404, 'Hittade inget spel med den koden')
+  if (room.hostId !== user.id) throw httpError(403, 'Bara värden kan avsluta spelet')
+  if (!room.startedAt) throw httpError(409, 'Spelet har inte startat än')
+
+  const { questions } = typeof room.questions === 'string' ? JSON.parse(room.questions) : room.questions
+  const past = questions.length + 1
+  if (room.currentQuestion < past) {
+    await pool.execute('UPDATE coplay_rooms SET current_question = ? WHERE id = ?', [past, room.id])
+  }
+  return { finished: true }
+}
+
 // Spelarens egna svar, i ordning, redo att skickas till POST /api/results
 async function getOwnAnswers(user, code) {
   const room = await findRoom(code)
@@ -207,6 +223,16 @@ async function getOwnAnswers(user, code) {
     [room.id, user.id],
   )
   return rows
+}
+
+// Ett co-play-försök som tillhör spelaren. Resultatet får då lämnas in även om
+// nivån är låst för spelaren själv: det är värdens rum som avgör nivån.
+async function isOwnCoplayAttempt(userId, attemptId) {
+  const [rows] = await pool.execute(
+    'SELECT 1 FROM coplay_players WHERE user_id = ? AND attempt_id = ?',
+    [userId, attemptId],
+  )
+  return rows.length > 0
 }
 
 // Scoreboard: everyone's score, ranked. Same order as a highscore: most correct, then fastest.
@@ -250,6 +276,7 @@ async function getScores(user, code) {
 }
 
 module.exports = {
+  isOwnCoplayAttempt,
   createRoom,
   joinRoom,
   getLobby,
@@ -258,6 +285,7 @@ module.exports = {
   getState,
   saveAnswer,
   nextQuestion,
+  endRoom,
   getOwnAnswers,
   getScores,
 }

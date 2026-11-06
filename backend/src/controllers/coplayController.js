@@ -30,10 +30,9 @@ async function join(req, res) {
   const code = validCode(req, res)
   if (!code) return
 
-  const room = await coplayService.joinRoom(req.user, code)
-  // The difficulty has to be unlocked for the joining player too
-  await xpService.assertCanPlay(req.user, room.difficulty)
-  res.json(room)
+  // Nivån behöver inte vara upplåst för den som går med: värden har redan
+  // låst upp den, och alla i rummet spelar samma frågor
+  res.json(await coplayService.joinRoom(req.user, code))
 }
 
 // GET /api/coplay/:code – lobby: who has joined and has the host started
@@ -89,6 +88,13 @@ async function next(req, res) {
   res.json(await coplayService.nextQuestion(req.user, code))
 }
 
+// POST /api/coplay/:code/end - bara värden, avslutar spelet för alla
+async function end(req, res) {
+  const code = validCode(req, res)
+  if (!code) return
+  res.json(await coplayService.endRoom(req.user, code))
+}
+
 // GET /api/coplay/:code/answers - spelarens egna svar, för inlämningen
 async function answers(req, res) {
   const code = validCode(req, res)
@@ -103,4 +109,4 @@ async function scores(req, res) {
   res.json(await coplayService.getScores(req.user, code))
 }
 
-module.exports = { create, join, lobby, start, questions, state, answer, next, answers, scores }
+module.exports = { create, join, lobby, start, questions, state, answer, next, end, answers, scores }
