@@ -26,6 +26,8 @@ const finished = ref(false)
 const scores = ref(null)
 const pending = ref(true)
 const advancing = ref(false)
+const showExitModal = ref(false)
+const leaving = ref(false)
 const error = ref('')
 let statePoll
 let scorePoll
@@ -98,6 +100,21 @@ async function next() {
   } finally {
     advancing.value = false
   }
+}
+
+// Värden avslutar för alla, en spelare lämnar bara sitt eget spel. Båda
+// lämnar in det spelaren hunnit svara på, så resultatet finns kvar i ställningen.
+async function confirmExit() {
+  if (leaving.value) return
+  leaving.value = true
+  showExitModal.value = false
+  try {
+    if (isHost.value) await request(`/coplay/${code.value}/end`, {})
+  } catch {
+    // Avbröts det för de andra eller inte: spelaren ska ändå ut ur quizet
+  }
+  await submit()
+  leaving.value = false
 }
 
 // Hämtar spelarens sparade svar och lämnar in dem som ett vanligt quiz
@@ -194,6 +211,15 @@ onMounted(async () => {
     <div v-else-if="question" class="cq__question">
       <header class="cq__top">
         <span>Fråga {{ current }} av {{ questions.length }}</span>
+        <button
+          class="cq__close"
+          type="button"
+          :aria-label="isHost ? 'Avsluta quizet för alla' : 'Lämna quizet'"
+          :disabled="leaving"
+          @click="showExitModal = true"
+        >
+          ×
+        </button>
       </header>
 
       <!-- Fylls i grönt för varje spelare som svarat, och blir helgrön när alla svarat -->
@@ -243,6 +269,31 @@ onMounted(async () => {
         {{ advancing ? 'Går vidare…' : isLast ? 'Avsluta quizet' : 'Nästa fråga' }}
       </button>
     </div>
+
+    <!-- Värden avslutar för alla, en spelare lämnar bara sitt eget spel -->
+    <Teleport to="body">
+      <div v-if="showExitModal" class="cq-exit-backdrop" @click.self="showExitModal = false">
+        <div class="cq-exit" role="dialog" aria-modal="true" aria-labelledby="cq-exit-title">
+          <h2 id="cq-exit-title">{{ isHost ? 'Avsluta quizet för alla?' : 'Lämna quizet?' }}</h2>
+          <p v-if="isHost">
+            Spelet avslutas för alla spelare. Det ni hunnit svara på sparas och
+            ställningen visas.
+          </p>
+          <p v-else>
+            Du lämnar quizet, men de andra fortsätter spela. Det du hunnit svara
+            på sparas.
+          </p>
+          <div class="cq-exit__actions">
+            <button type="button" class="cq-exit__stay" @click="showExitModal = false">
+              Fortsätt spela
+            </button>
+            <button type="button" class="cq-exit__leave" :disabled="leaving" @click="confirmExit">
+              {{ isHost ? 'Avsluta för alla' : 'Lämna quizet' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -273,6 +324,84 @@ onMounted(async () => {
   margin-bottom: 16px;
   color: var(--color-text-secondary);
   font-size: 14px;
+}
+
+.cq__close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.cq__close:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.cq__close:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cq-exit-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--color-backdrop);
+  backdrop-filter: blur(3px);
+}
+
+.cq-exit {
+  width: min(440px, 100%);
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.2);
+  text-align: center;
+}
+
+.cq-exit p {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.cq-exit__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cq-exit__actions button {
+  flex: 1;
+  min-height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.cq-exit__actions .cq-exit__leave {
+  border-color: transparent;
+  background: var(--color-danger);
+  color: white;
+}
+
+.cq-exit__actions .cq-exit__leave:disabled {
+  opacity: 0.65;
+  cursor: wait;
 }
 
 .cq__progress {

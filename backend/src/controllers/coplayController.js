@@ -88,6 +88,13 @@ async function next(req, res) {
   res.json(await coplayService.nextQuestion(req.user, code))
 }
 
+// POST /api/coplay/:code/end - bara värden, avslutar spelet för alla
+async function end(req, res) {
+  const code = validCode(req, res)
+  if (!code) return
+  res.json(await coplayService.endRoom(req.user, code))
+}
+
 // GET /api/coplay/:code/answers - spelarens egna svar, för inlämningen
 async function answers(req, res) {
   const code = validCode(req, res)
@@ -102,4 +109,4 @@ async function scores(req, res) {
   res.json(await coplayService.getScores(req.user, code))
 }
 
-module.exports = { create, join, lobby, start, questions, state, answer, next, answers, scores }
+module.exports = { create, join, lobby, start, questions, state, answer, next, end, answers, scores }

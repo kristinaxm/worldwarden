@@ -13,6 +13,7 @@ router.get('/:code/questions', requireUser, coplayController.questions)
 router.get('/:code/state', requireUser, coplayController.state)
 router.post('/:code/answer', requireUser, coplayController.answer)
 router.post('/:code/next', requireUser, coplayController.next)
+router.post('/:code/end', requireUser, coplayController.end)
 router.get('/:code/answers', requireUser, coplayController.answers)
 router.get('/:code/scores', requireUser, coplayController.scores)
 
